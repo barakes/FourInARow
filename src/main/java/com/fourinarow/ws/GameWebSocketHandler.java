@@ -82,10 +82,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
 
         switch (request.type()) {
-            case CREATE_ROOM -> roomService.createRoom(connection, request.nickname());
-            case JOIN_ROOM -> roomService.joinRoom(connection, request.code(), request.nickname());
-            case PLAY_COMPUTER -> roomService.playAgainstComputer(connection, request.nickname(), request.difficulty());
-            case MOVE -> roomService.move(connection, request.column());
+            case CREATE_ROOM -> roomService.createRoom(
+                    connection, request.nickname(), request.mode(), request.boardSize());
+            case JOIN_ROOM -> roomService.joinRoom(
+                    connection, request.code(), request.nickname());
+            case PLAY_COMPUTER -> roomService.playAgainstComputer(
+                    connection, request.nickname(), request.difficulty(), request.mode(), request.boardSize());
+            case MOVE -> roomService.move(
+                    connection, request.column());
+            case CARD_MOVE -> roomService.cardMove(
+                    connection, request.handIndex(), request.row(), request.column());
         }
     }
 }

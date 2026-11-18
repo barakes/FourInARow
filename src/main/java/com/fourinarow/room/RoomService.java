@@ -1,6 +1,7 @@
 package com.fourinarow.room;
 
 import com.fourinarow.ai.Difficulty;
+import com.fourinarow.cards.BoardSize;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -19,17 +20,23 @@ public class RoomService {
     private static final int MAX_NICKNAME_LENGTH = 20;
 
     private final Random random = new SecureRandom();
-    private final Map<String, Room> roomsByCode = new ConcurrentHashMap<>();
-    private final Map<String, Room> roomsByConnection = new ConcurrentHashMap<>();
+    private final Map<String, GameRoom> roomsByCode = new ConcurrentHashMap<>();
+    private final Map<String, GameRoom> roomsByConnection = new ConcurrentHashMap<>();
 
-    public synchronized void createRoom(Connection connection, String nickname) {
+    public synchronized void createRoom(Connection connection, String nickname, GameMode mode, BoardSize boardSize) {
         leave(connection);
-        Room room = Room.forFriends(newCode(), cleanNickname(nickname), connection);
+        String code = newCode();
+        String name = cleanNickname(nickname);
+
+        GameRoom room = switch (orDefault(mode)) {
+            case CLASSIC -> Room.forFriends(code, name, connection);
+            case CARDS -> CardRoom.forFriends(code, name, connection, orDefault(boardSize), new SecureRandom());
+        };
         register(room, connection);
     }
 
     public synchronized void joinRoom(Connection connection, String code, String nickname) {
-        Room room = code == null ? null : roomsByCode.get(code.strip().toUpperCase(Locale.ROOT));
+        GameRoom room = code == null ? null : roomsByCode.get(code.strip().toUpperCase(Locale.ROOT));
         if (room == null) {
             throw new RoomException("There is no room with this code");
         }
@@ -39,13 +46,20 @@ public class RoomService {
         roomsByConnection.put(connection.id(), room);
     }
 
-    public synchronized void playAgainstComputer(Connection connection, String nickname, Difficulty difficulty) {
+    public synchronized void playAgainstComputer(Connection connection, String nickname, Difficulty difficulty,
+                                                 GameMode mode, BoardSize boardSize) {
         if (difficulty == null) {
             throw new RoomException("Please choose a difficulty");
         }
 
         leave(connection);
-        Room room = Room.againstComputer(newCode(), cleanNickname(nickname), connection, difficulty, new Random());
+        String code = newCode();
+        String name = cleanNickname(nickname);
+
+        GameRoom room = switch (orDefault(mode)) {
+            case CLASSIC -> Room.againstComputer(code, name, connection, difficulty, new Random());
+            case CARDS -> CardRoom.againstComputer(code, name, connection, difficulty, orDefault(boardSize), new SecureRandom());
+        };
         register(room, connection);
     }
 
@@ -54,17 +68,19 @@ public class RoomService {
         if (column == null) {
             throw new RoomException("Please choose a column");
         }
+        roomOf(connection).play(connection, column);
+    }
 
-        Room room = roomsByConnection.get(connection.id());
-        if (room == null) {
-            throw new RoomException("You are not in a game");
+    public void cardMove(Connection connection, Integer handIndex, Integer row, Integer column) {
+        if (handIndex == null || row == null || column == null) {
+            throw new RoomException("Please choose a card and a cell");
         }
-        room.play(connection, column);
+        roomOf(connection).playCard(connection, handIndex, row, column);
     }
 
     // Called when a player disconnects or starts another game. The whole room is closed.
     public synchronized void leave(Connection connection) {
-        Room room = roomsByConnection.remove(connection.id());
+        GameRoom room = roomsByConnection.remove(connection.id());
         if (room == null) {
             return;
         }
@@ -78,7 +94,15 @@ public class RoomService {
         return roomsByCode.size();
     }
 
-    private void register(Room room, Connection connection) {
+    private GameRoom roomOf(Connection connection) {
+        GameRoom room = roomsByConnection.get(connection.id());
+        if (room == null) {
+            throw new RoomException("You are not in a game");
+        }
+        return room;
+    }
+
+    private void register(GameRoom room, Connection connection) {
         roomsByCode.put(room.getCode(), room);
         roomsByConnection.put(connection.id(), room);
     }
@@ -93,6 +117,15 @@ public class RoomService {
             code = builder.toString();
         } while (roomsByCode.containsKey(code));
         return code;
+    }
+
+    // Older pages that don't send a mode get the classic game.
+    private static GameMode orDefault(GameMode mode) {
+        return mode == null ? GameMode.CLASSIC : mode;
+    }
+
+    private static BoardSize orDefault(BoardSize boardSize) {
+        return boardSize == null ? BoardSize.LARGE : boardSize;
     }
 
     // Keeps letters (in any language, including Hebrew), digits, spaces, '-' and '_'. Everything else is removed.

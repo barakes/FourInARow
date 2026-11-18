@@ -15,9 +15,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
-// One game between two players: two people, or a person and the computer.
+// One classic game between two players: two people, or a person and the computer.
 // All methods are synchronized, so moves from both players are handled one at a time.
-public class Room {
+public class Room implements GameRoom {
 
     // A seat at the table. The computer's seat has no connection.
     private record Seat(String nickname, Connection connection) {
@@ -51,6 +51,7 @@ public class Room {
         return room;
     }
 
+    @Override
     public synchronized void join(String nickname, Connection guest) {
         if (computer != null || seats.containsKey(Player.TWO)) {
             throw new RoomException("This room is already full");
@@ -59,6 +60,7 @@ public class Room {
         sendGameStarted();
     }
 
+    @Override
     public synchronized void play(Connection connection, int column) {
         if (!isFull()) {
             throw new RoomException("Waiting for another player to join");
@@ -74,7 +76,13 @@ public class Room {
         }
     }
 
+    @Override
+    public void playCard(Connection connection, int handIndex, int row, int column) {
+        throw new RoomException("This room is playing the classic game");
+    }
+
     // Called when a player disconnects: the other person, if any, is told.
+    @Override
     public synchronized void leave(Connection connection) {
         for (Seat seat : seats.values()) {
             if (seat.connection() != null && !seat.connection().id().equals(connection.id())) {
@@ -83,10 +91,12 @@ public class Room {
         }
     }
 
+    @Override
     public synchronized boolean isFull() {
         return seats.size() == 2;
     }
 
+    @Override
     public String getCode() {
         return code;
     }

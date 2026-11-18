@@ -1,5 +1,8 @@
 package com.fourinarow.ws;
 
+import com.fourinarow.cards.Card;
+import com.fourinarow.cards.CardGame;
+import com.fourinarow.cards.Picture;
 import com.fourinarow.game.Board;
 import com.fourinarow.game.Game;
 import com.fourinarow.game.Player;
@@ -20,6 +23,8 @@ public final class ServerMessages {
         }
     }
 
+    // ---------- The classic game ----------
+
     // Sent to each player when both seats are taken.
     public record GameStarted(String type, Player you, String playerOneName, String playerTwoName,
                               int rows, int columns, Player currentPlayer) {
@@ -37,6 +42,33 @@ public final class ServerMessages {
                     winner, result.winningLine(), currentPlayer);
         }
     }
+
+    // ---------- The card game ----------
+
+    // Sent to each player separately: "hand" is only that player's own cards.
+    // The board is a list of rows; the free cell is null.
+    public record CardGameStarted(String type, Player you, String playerOneName, String playerTwoName,
+                                  int size, List<List<Picture>> board, Player currentPlayer,
+                                  List<Card> hand, int cardsLeft) {
+        public CardGameStarted(Player you, String playerOneName, String playerTwoName, int size,
+                               List<List<Picture>> board, Player currentPlayer, List<Card> hand, int cardsLeft) {
+            this("CARD_GAME_STARTED", you, playerOneName, playerTwoName, size, board, currentPlayer, hand, cardsLeft);
+        }
+    }
+
+    // Sent to each player separately after every turn. Everything except "hand" is the same for both.
+    public record CardTurnPlayed(String type, Player player, Card card, int row, int column, boolean removed,
+                                 CardGame.Status status, Player winner, List<CardGame.Position> winningLine,
+                                 Player currentPlayer, List<Player> skippedPlayers,
+                                 List<Card> hand, int cardsLeft) {
+        public CardTurnPlayed(CardGame.TurnResult result, List<Card> hand, int cardsLeft) {
+            this("CARD_TURN_PLAYED", result.player(), result.card(), result.row(), result.column(), result.removed(),
+                    result.status(), result.winner(), result.winningLine(), result.currentPlayer(),
+                    result.skippedPlayers(), hand, cardsLeft);
+        }
+    }
+
+    // ---------- Both games ----------
 
     // Sent to the remaining player when the other one disconnects.
     public record OpponentLeft(String type) {
