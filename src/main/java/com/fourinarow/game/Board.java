@@ -36,6 +36,17 @@ public class Board {
         this.heights = new int[columns];
     }
 
+    // An independent copy: changing it never affects the original board.
+    public Board copy() {
+        Board copy = new Board(rows, columns);
+        for (int row = 0; row < rows; row++) {
+            System.arraycopy(cells[row], 0, copy.cells[row], 0, columns);
+        }
+        System.arraycopy(heights, 0, copy.heights, 0, columns);
+        copy.discCount = discCount;
+        return copy;
+    }
+
     // Drops a disc into a column and returns the row where it landed.
     public int drop(int column, Player player) {
         if (column < 0 || column >= columns) {

@@ -54,6 +54,11 @@ public class Game {
         return new MoveResult(row, column, player, status, winningLine);
     }
 
+    // A copy, so whoever "thinks" with it (like the computer player) can't change the real game.
+    public synchronized Board copyBoard() {
+        return board.copy();
+    }
+
     public synchronized boolean canPlay(int column) {
         return status == Status.IN_PROGRESS && board.canDrop(column);
     }
