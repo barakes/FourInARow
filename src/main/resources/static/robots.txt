@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fourinarow-990e.onrender.com/sitemap.xml

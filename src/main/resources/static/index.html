@@ -1,923 +1,956 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ארבע בשורה</title>
-    <style>
-        :root {
-            --bg: #eef4ff;
-            --card: #ffffff;
-            --text: #1d2440;
-            --muted: #5b6487;
-            --primary: #3b5bdb;
-            --primary-dark: #2f49b0;
-            --board: #2f49b0;
-            --hole: #e7ecfb;
-            --one: #ffc53d;
-            --one-dark: #c98a00;
-            --two: #ff5d73;
-            --two-dark: #c22c44;
-            --radius: 18px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ארבע בשורה אונליין – משחק חינמי נגד המחשב או עם חבר</title>
 
-        * { box-sizing: border-box; }
+  <!-- What search engines show under the title. -->
+  <meta name="description" content="משחק ארבע בשורה חינמי בדפדפן: נגד המחשב בשלוש רמות קושי, או עם חבר בזמן אמת עם קוד חדר. גם בגרסת קלפים עם תמונות. בלי הרשמה, מתאים לילדים.">
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: "Rubik", "Segoe UI", Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            padding: 16px;
-        }
+  <!-- The one official address of this page. If the site moves to another domain, change it here. -->
+  <link rel="canonical" href="https://fourinarow-990e.onrender.com/">
+  <link rel="icon" type="image/png" href="favicon.png">
 
-        main { width: 100%; max-width: 560px; }
+  <!-- The preview shown when the link is shared (WhatsApp, LinkedIn, Facebook...). -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="he_IL">
+  <meta property="og:title" content="ארבע בשורה אונליין">
+  <meta property="og:description" content="נגד המחשב או עם חבר בזמן אמת. גם בגרסת קלפים עם תמונות. בלי הרשמה.">
+  <meta property="og:url" content="https://fourinarow-990e.onrender.com/">
+  <meta property="og:image" content="https://fourinarow-990e.onrender.com/images/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    :root {
+      --bg: #eef4ff;
+      --card: #ffffff;
+      --text: #1d2440;
+      --muted: #5b6487;
+      --primary: #3b5bdb;
+      --primary-dark: #2f49b0;
+      --board: #2f49b0;
+      --hole: #e7ecfb;
+      --one: #ffc53d;
+      --one-dark: #c98a00;
+      --two: #ff5d73;
+      --two-dark: #c22c44;
+      --radius: 18px;
+    }
 
-        h1 {
-            text-align: center;
-            font-size: 2.2rem;
-            margin: 8px 0 20px;
-            letter-spacing: 0.5px;
-        }
+    * { box-sizing: border-box; }
 
-        .card {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 6px 20px rgba(29, 36, 64, 0.08);
-        }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Rubik", "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
 
-        .card h2 { margin: 0 0 12px; font-size: 1.25rem; }
+    main { width: 100%; max-width: 560px; }
 
-        label { display: block; font-weight: 600; margin-bottom: 6px; }
+    h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin: 8px 0 20px;
+      letter-spacing: 0.5px;
+    }
 
-        input {
-            width: 100%;
-            font-size: 1.15rem;
-            padding: 12px 14px;
-            border: 2px solid #cdd6f4;
-            border-radius: 12px;
-            font-family: inherit;
-        }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 20px rgba(29, 36, 64, 0.08);
+    }
 
-        input:focus { outline: none; border-color: var(--primary); }
+    .card h2 { margin: 0 0 12px; font-size: 1.25rem; }
 
-        .row { display: flex; gap: 10px; flex-wrap: wrap; }
-        .row > * { flex: 1 1 0; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
 
-        button {
-            font-family: inherit;
-            font-size: 1.1rem;
-            font-weight: 700;
-            padding: 14px 12px;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            background: var(--primary);
-            color: #fff;
-            transition: transform 0.1s, background 0.2s;
-        }
+    input {
+      width: 100%;
+      font-size: 1.15rem;
+      padding: 12px 14px;
+      border: 2px solid #cdd6f4;
+      border-radius: 12px;
+      font-family: inherit;
+    }
 
-        button:hover { background: var(--primary-dark); }
-        button:active { transform: scale(0.97); }
-        button.secondary { background: #e3e8fb; color: var(--primary-dark); }
-        button.secondary:hover { background: #d3dbf8; }
+    input:focus { outline: none; border-color: var(--primary); }
 
-        .hidden { display: none !important; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row > * { flex: 1 1 0; }
 
-        .code {
-            font-size: 2.6rem;
-            font-weight: 800;
-            letter-spacing: 8px;
-            text-align: center;
-            direction: ltr;
-            margin: 10px 0 16px;
-            color: var(--primary-dark);
-        }
+    button {
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 14px 12px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      transition: transform 0.1s, background 0.2s;
+    }
 
-        .muted { color: var(--muted); text-align: center; margin: 4px 0 12px; }
+    button:hover { background: var(--primary-dark); }
+    button:active { transform: scale(0.97); }
+    button.secondary { background: #e3e8fb; color: var(--primary-dark); }
+    button.secondary:hover { background: #d3dbf8; }
 
-        .players {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
+    .hidden { display: none !important; }
 
-        .player {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            border-radius: 14px;
-            background: var(--card);
-            border: 3px solid transparent;
-            font-weight: 700;
-            min-width: 0;
-        }
+    .code {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: 8px;
+      text-align: center;
+      direction: ltr;
+      margin: 10px 0 16px;
+      color: var(--primary-dark);
+    }
 
-        .player .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .player.active { border-color: var(--primary); }
+    .muted { color: var(--muted); text-align: center; margin: 4px 0 12px; }
 
-        .status {
-            text-align: center;
-            font-size: 1.3rem;
-            font-weight: 700;
-            min-height: 2rem;
-            margin: 6px 0 12px;
-        }
+    .players {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
 
-        /* The board is always left-to-right, so column numbers match the server. */
-        .board {
-            direction: ltr;
-            display: grid;
-            gap: 6px;
-            padding: 10px;
-            background: var(--board);
-            border-radius: var(--radius);
-            box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.15);
-            user-select: none;
-            overflow: hidden;
-        }
+    .player {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 3px solid transparent;
+      font-weight: 700;
+      min-width: 0;
+    }
 
-        .column {
-            display: grid;
-            gap: 6px;
-            border-radius: 12px;
-            padding: 2px;
-            cursor: pointer;
-        }
+    .player .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .player.active { border-color: var(--primary); }
 
-        .board.locked .column { cursor: default; }
-        .board:not(.locked) .column:hover { background: rgba(255, 255, 255, 0.18); }
+    .status {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      min-height: 2rem;
+      margin: 6px 0 12px;
+    }
 
-        .cell {
-            aspect-ratio: 1;
-            border-radius: 50%;
-            background: var(--hole);
-            position: relative;
-        }
+    /* The board is always left-to-right, so column numbers match the server. */
+    .board {
+      direction: ltr;
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      background: var(--board);
+      border-radius: var(--radius);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.15);
+      user-select: none;
+      overflow: hidden;
+    }
 
-        /* Discs differ by symbol as well as color, so they are easy to tell apart for everyone. */
-        .disc {
-            position: absolute;
-            inset: 6%;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(0.9rem, 4.5vw, 1.6rem);
-            font-weight: 900;
-            z-index: 1;
-            animation: drop 0.35s ease-in;
-        }
+    .column {
+      display: grid;
+      gap: 6px;
+      border-radius: 12px;
+      padding: 2px;
+      cursor: pointer;
+    }
 
-        .disc.one { background: var(--one); color: var(--one-dark); box-shadow: inset 0 -4px 0 var(--one-dark); }
-        .disc.two { background: var(--two); color: #fff; box-shadow: inset 0 -4px 0 var(--two-dark); }
-        .disc.one::after { content: "★"; }
-        .disc.two::after { content: "●"; font-size: 0.8em; }
+    .board.locked .column { cursor: default; }
+    .board:not(.locked) .column:hover { background: rgba(255, 255, 255, 0.18); }
 
-        .disc.winning { animation: drop 0.35s ease-in, pulse 0.8s ease-in-out 0.35s infinite alternate; }
+    .cell {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--hole);
+      position: relative;
+    }
 
-        /* --fall is how many cells the disc falls, set when it is added. */
-        @keyframes drop {
-            from { transform: translateY(calc(var(--fall, 6) * -112%)); }
-            to { transform: translateY(0); }
-        }
+    /* Discs differ by symbol as well as color, so they are easy to tell apart for everyone. */
+    .disc {
+      position: absolute;
+      inset: 6%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(0.9rem, 4.5vw, 1.6rem);
+      font-weight: 900;
+      z-index: 1;
+      animation: drop 0.35s ease-in;
+    }
 
-        @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(0.82); }
-        }
+    .disc.one { background: var(--one); color: var(--one-dark); box-shadow: inset 0 -4px 0 var(--one-dark); }
+    .disc.two { background: var(--two); color: #fff; box-shadow: inset 0 -4px 0 var(--two-dark); }
+    .disc.one::after { content: "★"; }
+    .disc.two::after { content: "●"; font-size: 0.8em; }
 
-        .mini-disc {
-            width: 28px;
-            height: 28px;
-            flex: 0 0 28px;
-            position: relative;
-            border-radius: 50%;
-        }
+    .disc.winning { animation: drop 0.35s ease-in, pulse 0.8s ease-in-out 0.35s infinite alternate; }
 
-        .mini-disc .disc { inset: 0; animation: none; font-size: 1rem; }
+    /* --fall is how many cells the disc falls, set when it is added. */
+    @keyframes drop {
+      from { transform: translateY(calc(var(--fall, 6) * -112%)); }
+      to { transform: translateY(0); }
+    }
 
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--text);
-            color: #fff;
-            padding: 12px 18px;
-            border-radius: 12px;
-            font-weight: 600;
-            max-width: calc(100% - 32px);
-            text-align: center;
-        }
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(0.82); }
+    }
 
-        .actions { margin-top: 14px; }
+    .mini-disc {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+      position: relative;
+      border-radius: 50%;
+    }
 
-        /* ---------- Choosing the game ---------- */
-        .choice { display: flex; gap: 10px; }
-        .choice button { flex: 1; background: #e3e8fb; color: var(--primary-dark); border: 3px solid transparent; }
-        .choice button:hover { background: #d3dbf8; }
-        .choice button.selected,
-        .choice button.selected:hover { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
-        .choice button small { display: block; font-weight: 500; font-size: 0.85rem; margin-top: 2px; }
+    .mini-disc .disc { inset: 0; animation: none; font-size: 1rem; }
 
-        /* ---------- The card game board ---------- */
-        .card-board {
-            direction: ltr;
-            display: grid;
-            gap: 5px;
-            padding: 10px;
-            background: #2b8a3e;
-            border-radius: var(--radius);
-            box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.15);
-            user-select: none;
-        }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      max-width: calc(100% - 32px);
+      text-align: center;
+    }
 
-        .square {
-            aspect-ratio: 1;
-            border-radius: 10px;
-            background: #f4fbf3;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(1rem, 6vw, 2rem);
-            transition: transform 0.1s, box-shadow 0.15s;
-        }
+    .actions { margin-top: 14px; }
 
-        .square img { width: 78%; height: 78%; object-fit: contain; pointer-events: none; }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin: 24px 0 8px;
+    }
 
-        .square.free {
-            background: repeating-linear-gradient(45deg, #fff3bf, #fff3bf 6px, #ffe066 6px, #ffe066 12px);
-            font-size: clamp(0.6rem, 3vw, 0.9rem);
-            font-weight: 800;
-            color: #7a5900;
-        }
+    footer a { color: var(--primary-dark); }
 
-        .square.target { box-shadow: 0 0 0 4px #ffd43b; cursor: pointer; }
-        .square.target:hover { transform: scale(1.06); }
+    /* ---------- Choosing the game ---------- */
+    .choice { display: flex; gap: 10px; }
+    .choice button { flex: 1; background: #e3e8fb; color: var(--primary-dark); border: 3px solid transparent; }
+    .choice button:hover { background: #d3dbf8; }
+    .choice button.selected,
+    .choice button.selected:hover { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
+    .choice button small { display: block; font-weight: 500; font-size: 0.85rem; margin-top: 2px; }
 
-        .square .disc { inset: 10%; animation: pop 0.25s ease-out; }
-        .square .disc.winning { animation: pop 0.25s ease-out, pulse 0.8s ease-in-out 0.25s infinite alternate; }
-        .square.last-move { box-shadow: 0 0 0 3px #1d2440; }
+    /* ---------- The card game board ---------- */
+    .card-board {
+      direction: ltr;
+      display: grid;
+      gap: 5px;
+      padding: 10px;
+      background: #2b8a3e;
+      border-radius: var(--radius);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.15);
+      user-select: none;
+    }
 
-        @keyframes pop {
-            from { transform: scale(0.2); }
-            to { transform: scale(1); }
-        }
+    .square {
+      aspect-ratio: 1;
+      border-radius: 10px;
+      background: #f4fbf3;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1rem, 6vw, 2rem);
+      transition: transform 0.1s, box-shadow 0.15s;
+    }
 
-        .hand-title { text-align: center; font-weight: 700; margin: 14px 0 8px; }
+    .square img { width: 78%; height: 78%; object-fit: contain; pointer-events: none; }
 
-        .hand { display: flex; gap: 10px; justify-content: center; }
+    .square.free {
+      background: repeating-linear-gradient(45deg, #fff3bf, #fff3bf 6px, #ffe066 6px, #ffe066 12px);
+      font-size: clamp(0.6rem, 3vw, 0.9rem);
+      font-weight: 800;
+      color: #7a5900;
+    }
 
-        .playing-card {
-            width: 30%;
-            max-width: 120px;
-            aspect-ratio: 2 / 3;
-            border-radius: 14px;
-            background: #fff;
-            border: 3px solid #cdd6f4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: clamp(1.8rem, 9vw, 2.8rem);
-            cursor: pointer;
-            padding: 6px;
-            color: var(--text);
-            transition: transform 0.12s, border-color 0.12s;
-        }
+    .square.target { box-shadow: 0 0 0 4px #ffd43b; cursor: pointer; }
+    .square.target:hover { transform: scale(1.06); }
 
-        .playing-card img { width: 72%; aspect-ratio: 1; object-fit: contain; pointer-events: none; }
-        .playing-card .label { font-size: 0.9rem; font-weight: 700; text-align: center; }
-        .playing-card:hover { background: #fff; transform: translateY(-4px); }
-        .playing-card.selected { border-color: var(--primary); transform: translateY(-8px); box-shadow: 0 8px 16px rgba(59, 91, 219, 0.3); }
-        .playing-card.special { background: #fff9db; }
-        .playing-card:disabled { cursor: default; opacity: 0.6; transform: none; }
+    .square .disc { inset: 10%; animation: pop 0.25s ease-out; }
+    .square .disc.winning { animation: pop 0.25s ease-out, pulse 0.8s ease-in-out 0.25s infinite alternate; }
+    .square.last-move { box-shadow: 0 0 0 3px #1d2440; }
 
-        .deck-info { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
-    </style>
+    @keyframes pop {
+      from { transform: scale(0.2); }
+      to { transform: scale(1); }
+    }
+
+    .hand-title { text-align: center; font-weight: 700; margin: 14px 0 8px; }
+
+    .hand { display: flex; gap: 10px; justify-content: center; }
+
+    .playing-card {
+      width: 30%;
+      max-width: 120px;
+      aspect-ratio: 2 / 3;
+      border-radius: 14px;
+      background: #fff;
+      border: 3px solid #cdd6f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: clamp(1.8rem, 9vw, 2.8rem);
+      cursor: pointer;
+      padding: 6px;
+      color: var(--text);
+      transition: transform 0.12s, border-color 0.12s;
+    }
+
+    .playing-card img { width: 72%; aspect-ratio: 1; object-fit: contain; pointer-events: none; }
+    .playing-card .label { font-size: 0.9rem; font-weight: 700; text-align: center; }
+    .playing-card:hover { background: #fff; transform: translateY(-4px); }
+    .playing-card.selected { border-color: var(--primary); transform: translateY(-8px); box-shadow: 0 8px 16px rgba(59, 91, 219, 0.3); }
+    .playing-card.special { background: #fff9db; }
+    .playing-card:disabled { cursor: default; opacity: 0.6; transform: none; }
+
+    .deck-info { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+  </style>
 </head>
 <body>
 <main>
-    <h1>ארבע בשורה</h1>
+  <h1>ארבע בשורה</h1>
 
-    <!-- Home screen -->
-    <section id="home">
-        <div class="card">
-            <label for="nickname">איך קוראים לך?</label>
-            <input id="nickname" maxlength="20" placeholder="הכינוי שלך" autocomplete="off">
+  <!-- Home screen -->
+  <section id="home">
+    <div class="card">
+      <label for="nickname">איך קוראים לך?</label>
+      <input id="nickname" maxlength="20" placeholder="הכינוי שלך" autocomplete="off">
+    </div>
+
+    <div class="card">
+      <h2>איזה משחק?</h2>
+      <div class="choice" id="mode-choice">
+        <button data-mode="CLASSIC" class="selected">רגיל<small>הדיסקיות נופלות למטה</small></button>
+        <button data-mode="CARDS">קלפים<small>הקלף קובע איפה מניחים</small></button>
+      </div>
+      <div id="size-area" class="hidden" style="margin-top: 12px;">
+        <label>גודל הלוח</label>
+        <div class="choice" id="size-choice">
+          <button data-size="SMALL">6 על 6</button>
+          <button data-size="LARGE" class="selected">7 על 7<small>עם משבצת חופשית</small></button>
         </div>
+      </div>
+    </div>
 
-        <div class="card">
-            <h2>איזה משחק?</h2>
-            <div class="choice" id="mode-choice">
-                <button data-mode="CLASSIC" class="selected">רגיל<small>הדיסקיות נופלות למטה</small></button>
-                <button data-mode="CARDS">קלפים<small>הקלף קובע איפה מניחים</small></button>
-            </div>
-            <div id="size-area" class="hidden" style="margin-top: 12px;">
-                <label>גודל הלוח</label>
-                <div class="choice" id="size-choice">
-                    <button data-size="SMALL">6 על 6</button>
-                    <button data-size="LARGE" class="selected">7 על 7<small>עם משבצת חופשית</small></button>
-                </div>
-            </div>
-        </div>
+    <div class="card">
+      <h2>משחק נגד המחשב</h2>
+      <div class="row">
+        <button data-difficulty="EASY">קל</button>
+        <button data-difficulty="MEDIUM">בינוני</button>
+        <button data-difficulty="HARD">קשה</button>
+      </div>
+    </div>
 
-        <div class="card">
-            <h2>משחק נגד המחשב</h2>
-            <div class="row">
-                <button data-difficulty="EASY">קל</button>
-                <button data-difficulty="MEDIUM">בינוני</button>
-                <button data-difficulty="HARD">קשה</button>
-            </div>
-        </div>
+    <div class="card">
+      <h2>משחק עם חבר</h2>
+      <button id="create-room" style="width: 100%; margin-bottom: 12px;">פתח חדר חדש</button>
+      <label for="room-code">או הצטרף עם קוד:</label>
+      <div class="row">
+        <input id="room-code" maxlength="5" placeholder="למשל K7Q2M" autocomplete="off" style="direction: ltr; text-transform: uppercase;">
+        <button id="join-room" class="secondary" style="flex: 0 0 auto;">הצטרף</button>
+      </div>
+    </div>
+  </section>
 
-        <div class="card">
-            <h2>משחק עם חבר</h2>
-            <button id="create-room" style="width: 100%; margin-bottom: 12px;">פתח חדר חדש</button>
-            <label for="room-code">או הצטרף עם קוד:</label>
-            <div class="row">
-                <input id="room-code" maxlength="5" placeholder="למשל K7Q2M" autocomplete="off" style="direction: ltr; text-transform: uppercase;">
-                <button id="join-room" class="secondary" style="flex: 0 0 auto;">הצטרף</button>
-            </div>
-        </div>
-    </section>
+  <!-- Waiting for a friend -->
+  <section id="waiting" class="hidden">
+    <div class="card">
+      <h2 style="text-align: center;">שלח את הקוד לחבר</h2>
+      <div class="code" id="waiting-code"></div>
+      <p class="muted">מחכים שהחבר יצטרף...</p>
+      <div class="row">
+        <button id="copy-code" class="secondary">העתק קוד</button>
+        <button class="back secondary">חזרה</button>
+      </div>
+    </div>
+  </section>
 
-    <!-- Waiting for a friend -->
-    <section id="waiting" class="hidden">
-        <div class="card">
-            <h2 style="text-align: center;">שלח את הקוד לחבר</h2>
-            <div class="code" id="waiting-code"></div>
-            <p class="muted">מחכים שהחבר יצטרף...</p>
-            <div class="row">
-                <button id="copy-code" class="secondary">העתק קוד</button>
-                <button class="back secondary">חזרה</button>
-            </div>
-        </div>
-    </section>
+  <!-- The game -->
+  <section id="game" class="hidden">
+    <div class="players">
+      <div class="player" id="player-one">
+        <span class="mini-disc"><span class="disc one"></span></span>
+        <span class="name"></span>
+      </div>
+      <div class="player" id="player-two">
+        <span class="mini-disc"><span class="disc two"></span></span>
+        <span class="name"></span>
+      </div>
+    </div>
 
-    <!-- The game -->
-    <section id="game" class="hidden">
-        <div class="players">
-            <div class="player" id="player-one">
-                <span class="mini-disc"><span class="disc one"></span></span>
-                <span class="name"></span>
-            </div>
-            <div class="player" id="player-two">
-                <span class="mini-disc"><span class="disc two"></span></span>
-                <span class="name"></span>
-            </div>
-        </div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="board" id="board"></div>
 
-        <div class="status" id="status" aria-live="polite"></div>
-        <div class="board" id="board"></div>
+    <div id="card-area" class="hidden">
+      <div class="card-board" id="card-board"></div>
+      <div class="hand-title">הקלפים שלך</div>
+      <div class="hand" id="hand"></div>
+      <div class="deck-info" id="deck-info"></div>
+    </div>
 
-        <div id="card-area" class="hidden">
-            <div class="card-board" id="card-board"></div>
-            <div class="hand-title">הקלפים שלך</div>
-            <div class="hand" id="hand"></div>
-            <div class="deck-info" id="deck-info"></div>
-        </div>
+    <div class="row actions">
+      <button class="back secondary">משחק חדש</button>
+    </div>
+  </section>
 
-        <div class="row actions">
-            <button class="back secondary">משחק חדש</button>
-        </div>
-    </section>
+  <footer>
+    <p>ארבע בשורה בחינם, ישר בדפדפן: נגד המחשב או עם חבר, ברגיל או עם קלפים. בלי הרשמה.</p>
+    <p><a href="https://github.com/barakes/FourInARow" target="_blank" rel="noopener">קוד המקור בגיטהאב</a></p>
+  </footer>
 </main>
 
 <div class="toast hidden" id="toast" role="alert"></div>
 
 <script>
-    "use strict";
+  "use strict";
 
-    // Server error messages, translated for the player. Anything unknown gets a general message.
-    const ERRORS = {
-        "There is no room with this code": "אין חדר עם הקוד הזה",
-        "This room is already full": "החדר הזה כבר מלא",
-        "Waiting for another player to join": "מחכים שעוד שחקן יצטרף",
-        "You are not in a game": "אתה לא במשחק כרגע",
-        "The game is already over": "המשחק כבר נגמר",
-        "Please choose a difficulty": "בחר רמת קושי",
-        "This card does not match that cell": "הקלף הזה לא מתאים למשבצת הזו",
-        "This cell is already taken": "המשבצת הזו כבר תפוסה",
-        "The free cell can't be taken": "אי אפשר להניח על המשבצת החופשית",
-        "You can only remove an opponent's disc": "אפשר למחוק רק מטבע של היריב",
-        "It is not your turn": "עכשיו לא התור שלך"
+  // Server error messages, translated for the player. Anything unknown gets a general message.
+  const ERRORS = {
+    "There is no room with this code": "אין חדר עם הקוד הזה",
+    "This room is already full": "החדר הזה כבר מלא",
+    "Waiting for another player to join": "מחכים שעוד שחקן יצטרף",
+    "You are not in a game": "אתה לא במשחק כרגע",
+    "The game is already over": "המשחק כבר נגמר",
+    "Please choose a difficulty": "בחר רמת קושי",
+    "This card does not match that cell": "הקלף הזה לא מתאים למשבצת הזו",
+    "This cell is already taken": "המשבצת הזו כבר תפוסה",
+    "The free cell can't be taken": "אי אפשר להניח על המשבצת החופשית",
+    "You can only remove an opponent's disc": "אפשר למחוק רק מטבע של היריב",
+    "It is not your turn": "עכשיו לא התור שלך"
+  };
+
+  // The pictures on the board and the cards. The server sends the names; the page shows a picture and a Hebrew name.
+  // The pictures on the board and the cards: an image file (in /images) and a Hebrew name.
+  // Images: Microsoft Fluent Emoji (MIT license), see images/LICENSE-fluentui-emoji.txt.
+  const PICTURES = {
+    DOG: "כלב", CAT: "חתול", RABBIT: "ארנב", LION: "אריה", ELEPHANT: "פיל", MONKEY: "קוף",
+    FROG: "צפרדע", PENGUIN: "פינגווין", OWL: "ינשוף", FISH: "דג", TURTLE: "צב", BUTTERFLY: "פרפר",
+    APPLE: "תפוח", BANANA: "בננה", STRAWBERRY: "תות", GRAPES: "ענבים", WATERMELON: "אבטיח", CARROT: "גזר",
+    SUN: "שמש", MOON: "ירח", STAR: "כוכב", FLOWER: "חמנייה", TREE: "עץ", BALL: "כדור"
+  };
+
+  const SPECIAL_CARDS = {
+    WILD: "קסם",
+    REMOVE: "מחק"
+  };
+
+  // e.g. "DOG" -> an <img> showing images/dog.png
+  function pictureImage(name, label) {
+    const image = document.createElement("img");
+    image.src = `images/${name.toLowerCase()}.png`;
+    image.alt = label;
+    image.draggable = false;
+    return image;
+  }
+
+  let selectedMode = "CLASSIC";
+  let selectedSize = "LARGE";
+
+  // A move by the opponent is shown a little later, so it doesn't appear at the same moment as yours.
+  const OPPONENT_MOVE_DELAY_MS = 600;
+
+  const screens = ["home", "waiting", "game"];
+  const $ = (id) => document.getElementById(id);
+
+  let socket = null;
+  let state = null;          // { you, rows, columns, currentPlayer, over }
+  let queue = [];            // server messages waiting to be shown
+  let processing = false;
+
+  function show(screen) {
+    screens.forEach((name) => $(name).classList.toggle("hidden", name !== screen));
+  }
+
+  function toast(text) {
+    const element = $("toast");
+    element.textContent = text;
+    element.classList.remove("hidden");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => element.classList.add("hidden"), 3000);
+  }
+
+  function nickname() {
+    return $("nickname").value.trim() || "שחקן";
+  }
+
+  // Opens a connection (once) and sends the message when it is ready.
+  function send(message) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message));
+      return;
+    }
+
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const created = new WebSocket(`${protocol}://${location.host}/ws`);
+    socket = created;
+
+    // Events from an old connection (one the player already left) are ignored.
+    created.onopen = () => created.send(JSON.stringify(message));
+    created.onmessage = (event) => {
+      if (socket === created) {
+        enqueue(JSON.parse(event.data));
+      }
     };
-
-    // The pictures on the board and the cards. The server sends the names; the page shows a picture and a Hebrew name.
-    // The pictures on the board and the cards: an image file (in /images) and a Hebrew name.
-    // Images: Microsoft Fluent Emoji (MIT license), see images/LICENSE-fluentui-emoji.txt.
-    const PICTURES = {
-        DOG: "כלב", CAT: "חתול", RABBIT: "ארנב", LION: "אריה", ELEPHANT: "פיל", MONKEY: "קוף",
-        FROG: "צפרדע", PENGUIN: "פינגווין", OWL: "ינשוף", FISH: "דג", TURTLE: "צב", BUTTERFLY: "פרפר",
-        APPLE: "תפוח", BANANA: "בננה", STRAWBERRY: "תות", GRAPES: "ענבים", WATERMELON: "אבטיח", CARROT: "גזר",
-        SUN: "שמש", MOON: "ירח", STAR: "כוכב", FLOWER: "חמנייה", TREE: "עץ", BALL: "כדור"
-    };
-
-    const SPECIAL_CARDS = {
-        WILD: "קסם",
-        REMOVE: "מחק"
-    };
-
-    // e.g. "DOG" -> an <img> showing images/dog.png
-    function pictureImage(name, label) {
-        const image = document.createElement("img");
-        image.src = `images/${name.toLowerCase()}.png`;
-        image.alt = label;
-        image.draggable = false;
-        return image;
-    }
-
-    let selectedMode = "CLASSIC";
-    let selectedSize = "LARGE";
-
-    // A move by the opponent is shown a little later, so it doesn't appear at the same moment as yours.
-    const OPPONENT_MOVE_DELAY_MS = 600;
-
-    const screens = ["home", "waiting", "game"];
-    const $ = (id) => document.getElementById(id);
-
-    let socket = null;
-    let state = null;          // { you, rows, columns, currentPlayer, over }
-    let queue = [];            // server messages waiting to be shown
-    let processing = false;
-
-    function show(screen) {
-        screens.forEach((name) => $(name).classList.toggle("hidden", name !== screen));
-    }
-
-    function toast(text) {
-        const element = $("toast");
-        element.textContent = text;
-        element.classList.remove("hidden");
-        clearTimeout(toast.timer);
-        toast.timer = setTimeout(() => element.classList.add("hidden"), 3000);
-    }
-
-    function nickname() {
-        return $("nickname").value.trim() || "שחקן";
-    }
-
-    // Opens a connection (once) and sends the message when it is ready.
-    function send(message) {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(message));
-            return;
-        }
-
-        const protocol = location.protocol === "https:" ? "wss" : "ws";
-        const created = new WebSocket(`${protocol}://${location.host}/ws`);
-        socket = created;
-
-        // Events from an old connection (one the player already left) are ignored.
-        created.onopen = () => created.send(JSON.stringify(message));
-        created.onmessage = (event) => {
-            if (socket === created) {
-                enqueue(JSON.parse(event.data));
-            }
-        };
-        created.onclose = () => {
-            if (socket !== created) {
-                return;
-            }
-            socket = null;
-            if (state && !state.over) {
-                toast("החיבור לשרת נותק");
-                state.over = true;
-                renderLock();
-            }
-        };
-    }
-
-    function enqueue(message) {
-        queue.push(message);
-        if (!processing) {
-            processQueue();
-        }
-    }
-
-    function processQueue() {
-        const message = queue.shift();
-        if (!message) {
-            processing = false;
-            return;
-        }
-        processing = true;
-
-        const isMove = message.type === "MOVE_MADE" || message.type === "CARD_TURN_PLAYED";
-        const delay = isMove && state && message.player !== state.you ? OPPONENT_MOVE_DELAY_MS : 0;
-
-        setTimeout(() => {
-            handle(message);
-            processQueue();
-        }, delay);
-    }
-
-    function handle(message) {
-        switch (message.type) {
-            case "ROOM_CREATED":
-                $("waiting-code").textContent = message.code;
-                show("waiting");
-                break;
-            case "GAME_STARTED":
-                startGame(message);
-                break;
-            case "MOVE_MADE":
-                applyMove(message);
-                break;
-            case "CARD_GAME_STARTED":
-                startCardGame(message);
-                break;
-            case "CARD_TURN_PLAYED":
-                applyCardTurn(message);
-                break;
-            case "OPPONENT_LEFT":
-                if (state && !state.over) {
-                    state.over = true;
-                    setStatus("היריב יצא מהמשחק");
-                    renderLock();
-                }
-                break;
-            case "ERROR":
-                toast(ERRORS[message.message] || "משהו השתבש, נסה שוב");
-                break;
-        }
-    }
-
-    function startGame(message) {
-        state = {
-            mode: "CLASSIC",
-            you: message.you,
-            rows: message.rows,
-            columns: message.columns,
-            currentPlayer: message.currentPlayer,
-            over: false
-        };
-        $("board").classList.remove("hidden");
-        $("card-area").classList.add("hidden");
-
-        $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
-        $("player-two").querySelector(".name").textContent = displayName(message.playerTwoName, "TWO");
-
-        buildBoard();
-        renderTurn();
-        show("game");
-    }
-
-    function displayName(name, player) {
-        const translated = name.startsWith("Computer (")
-            ? "המחשב (" + ({ easy: "קל", medium: "בינוני", hard: "קשה" }[name.slice(10, -1)] || "") + ")"
-            : name;
-        return player === state.you ? translated + " (אתה)" : translated;
-    }
-
-    function buildBoard() {
-        const board = $("board");
-        board.innerHTML = "";
-        board.style.gridTemplateColumns = `repeat(${state.columns}, 1fr)`;
-
-        for (let column = 0; column < state.columns; column++) {
-            const columnElement = document.createElement("div");
-            columnElement.className = "column";
-            columnElement.setAttribute("role", "button");
-            columnElement.setAttribute("aria-label", `עמודה ${column + 1}`);
-            columnElement.addEventListener("click", () => play(column));
-
-            // Row 0 is the bottom, so rows are added from the top down.
-            for (let row = state.rows - 1; row >= 0; row--) {
-                const cell = document.createElement("div");
-                cell.className = "cell";
-                cell.id = `cell-${row}-${column}`;
-                columnElement.appendChild(cell);
-            }
-            board.appendChild(columnElement);
-        }
-    }
-
-    function play(column) {
-        if (!state || state.over || state.currentPlayer !== state.you) {
-            return;
-        }
-        send({ type: "MOVE", column });
-    }
-
-    function applyMove(message) {
-        if (!state) {
-            return;
-        }
-        const disc = document.createElement("div");
-        disc.className = "disc " + (message.player === "ONE" ? "one" : "two");
-        disc.style.setProperty("--fall", state.rows - message.row);
-        $(`cell-${message.row}-${message.column}`).appendChild(disc);
-
-        state.currentPlayer = message.currentPlayer;
-
-        if (message.status === "WON") {
-            state.over = true;
-            message.winningLine.forEach((position) => {
-                const winning = $(`cell-${position.row}-${position.column}`).querySelector(".disc");
-                if (winning) {
-                    winning.classList.add("winning");
-                }
-            });
-            setStatus(message.winner === state.you ? "ניצחת! 🎉" : "הפעם היריב ניצח");
-        } else if (message.status === "DRAW") {
-            state.over = true;
-            setStatus("תיקו!");
-        } else {
-            renderTurn();
-            return;
-        }
+    created.onclose = () => {
+      if (socket !== created) {
+        return;
+      }
+      socket = null;
+      if (state && !state.over) {
+        toast("החיבור לשרת נותק");
+        state.over = true;
         renderLock();
-    }
+      }
+    };
+  }
 
-    function renderTurn() {
-        const yourTurn = state.currentPlayer === state.you;
-        setStatus(yourTurn ? "התור שלך" : "התור של היריב...");
-        $("player-one").classList.toggle("active", state.currentPlayer === "ONE");
-        $("player-two").classList.toggle("active", state.currentPlayer === "TWO");
-        renderLock();
+  function enqueue(message) {
+    queue.push(message);
+    if (!processing) {
+      processQueue();
     }
+  }
 
-    function renderLock() {
-        const locked = !state || state.over || state.currentPlayer !== state.you;
-        $("board").classList.toggle("locked", locked);
-        if (state && state.mode === "CARDS") {
-            renderHand();
+  function processQueue() {
+    const message = queue.shift();
+    if (!message) {
+      processing = false;
+      return;
+    }
+    processing = true;
+
+    const isMove = message.type === "MOVE_MADE" || message.type === "CARD_TURN_PLAYED";
+    const delay = isMove && state && message.player !== state.you ? OPPONENT_MOVE_DELAY_MS : 0;
+
+    setTimeout(() => {
+      handle(message);
+      processQueue();
+    }, delay);
+  }
+
+  function handle(message) {
+    switch (message.type) {
+      case "ROOM_CREATED":
+        $("waiting-code").textContent = message.code;
+        show("waiting");
+        break;
+      case "GAME_STARTED":
+        startGame(message);
+        break;
+      case "MOVE_MADE":
+        applyMove(message);
+        break;
+      case "CARD_GAME_STARTED":
+        startCardGame(message);
+        break;
+      case "CARD_TURN_PLAYED":
+        applyCardTurn(message);
+        break;
+      case "OPPONENT_LEFT":
+        if (state && !state.over) {
+          state.over = true;
+          setStatus("היריב יצא מהמשחק");
+          renderLock();
         }
-        if (state && state.over) {
-            $("player-one").classList.remove("active");
-            $("player-two").classList.remove("active");
+        break;
+      case "ERROR":
+        toast(ERRORS[message.message] || "משהו השתבש, נסה שוב");
+        break;
+    }
+  }
+
+  function startGame(message) {
+    state = {
+      mode: "CLASSIC",
+      you: message.you,
+      rows: message.rows,
+      columns: message.columns,
+      currentPlayer: message.currentPlayer,
+      over: false
+    };
+    $("board").classList.remove("hidden");
+    $("card-area").classList.add("hidden");
+
+    $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
+    $("player-two").querySelector(".name").textContent = displayName(message.playerTwoName, "TWO");
+
+    buildBoard();
+    renderTurn();
+    show("game");
+  }
+
+  function displayName(name, player) {
+    const translated = name.startsWith("Computer (")
+        ? "המחשב (" + ({ easy: "קל", medium: "בינוני", hard: "קשה" }[name.slice(10, -1)] || "") + ")"
+        : name;
+    return player === state.you ? translated + " (אתה)" : translated;
+  }
+
+  function buildBoard() {
+    const board = $("board");
+    board.innerHTML = "";
+    board.style.gridTemplateColumns = `repeat(${state.columns}, 1fr)`;
+
+    for (let column = 0; column < state.columns; column++) {
+      const columnElement = document.createElement("div");
+      columnElement.className = "column";
+      columnElement.setAttribute("role", "button");
+      columnElement.setAttribute("aria-label", `עמודה ${column + 1}`);
+      columnElement.addEventListener("click", () => play(column));
+
+      // Row 0 is the bottom, so rows are added from the top down.
+      for (let row = state.rows - 1; row >= 0; row--) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.id = `cell-${row}-${column}`;
+        columnElement.appendChild(cell);
+      }
+      board.appendChild(columnElement);
+    }
+  }
+
+  function play(column) {
+    if (!state || state.over || state.currentPlayer !== state.you) {
+      return;
+    }
+    send({ type: "MOVE", column });
+  }
+
+  function applyMove(message) {
+    if (!state) {
+      return;
+    }
+    const disc = document.createElement("div");
+    disc.className = "disc " + (message.player === "ONE" ? "one" : "two");
+    disc.style.setProperty("--fall", state.rows - message.row);
+    $(`cell-${message.row}-${message.column}`).appendChild(disc);
+
+    state.currentPlayer = message.currentPlayer;
+
+    if (message.status === "WON") {
+      state.over = true;
+      message.winningLine.forEach((position) => {
+        const winning = $(`cell-${position.row}-${position.column}`).querySelector(".disc");
+        if (winning) {
+          winning.classList.add("winning");
         }
+      });
+      setStatus(message.winner === state.you ? "ניצחת! 🎉" : "הפעם היריב ניצח");
+    } else if (message.status === "DRAW") {
+      state.over = true;
+      setStatus("תיקו!");
+    } else {
+      renderTurn();
+      return;
     }
+    renderLock();
+  }
 
-    // ---------- The card game ----------
+  function renderTurn() {
+    const yourTurn = state.currentPlayer === state.you;
+    setStatus(yourTurn ? "התור שלך" : "התור של היריב...");
+    $("player-one").classList.toggle("active", state.currentPlayer === "ONE");
+    $("player-two").classList.toggle("active", state.currentPlayer === "TWO");
+    renderLock();
+  }
 
-    function startCardGame(message) {
-        state = {
-            mode: "CARDS",
-            you: message.you,
-            size: message.size,
-            board: message.board,               // pictures; null is the free cell
-            discs: message.board.map((row) => row.map(() => null)),
-            hand: message.hand,
-            selectedCard: null,
-            currentPlayer: message.currentPlayer,
-            over: false
-        };
-
-        $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
-        $("player-two").querySelector(".name").textContent = displayName(message.playerTwoName, "TWO");
-
-        $("board").classList.add("hidden");
-        $("card-area").classList.remove("hidden");
-        buildCardBoard();
-        setDeckInfo(message.cardsLeft);
-        renderTurn();
-        show("game");
+  function renderLock() {
+    const locked = !state || state.over || state.currentPlayer !== state.you;
+    $("board").classList.toggle("locked", locked);
+    if (state && state.mode === "CARDS") {
+      renderHand();
     }
-
-    function buildCardBoard() {
-        const board = $("card-board");
-        board.innerHTML = "";
-        board.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
-
-        for (let row = 0; row < state.size; row++) {
-            for (let column = 0; column < state.size; column++) {
-                const square = document.createElement("div");
-                square.className = "square";
-                square.id = `square-${row}-${column}`;
-
-                const picture = state.board[row][column];
-                if (picture === null) {
-                    square.classList.add("free");
-                    square.textContent = "חופשי";
-                    square.setAttribute("aria-label", "משבצת חופשית");
-                } else {
-                    square.appendChild(pictureImage(picture, PICTURES[picture]));
-                    square.setAttribute("aria-label", PICTURES[picture]);
-                }
-
-                square.addEventListener("click", () => clickSquare(row, column));
-                board.appendChild(square);
-            }
-        }
+    if (state && state.over) {
+      $("player-one").classList.remove("active");
+      $("player-two").classList.remove("active");
     }
+  }
 
-    function renderHand() {
-        const handElement = $("hand");
-        handElement.innerHTML = "";
-        const myTurn = !state.over && state.currentPlayer === state.you;
+  // ---------- The card game ----------
 
-        state.hand.forEach((card, index) => {
-            const isPicture = card.kind === "PICTURE";
-            const imageName = isPicture ? card.picture : card.kind;
-            const label = isPicture ? PICTURES[card.picture] : SPECIAL_CARDS[card.kind];
+  function startCardGame(message) {
+    state = {
+      mode: "CARDS",
+      you: message.you,
+      size: message.size,
+      board: message.board,               // pictures; null is the free cell
+      discs: message.board.map((row) => row.map(() => null)),
+      hand: message.hand,
+      selectedCard: null,
+      currentPlayer: message.currentPlayer,
+      over: false
+    };
 
-            const button = document.createElement("button");
-            button.className = "playing-card" + (isPicture ? "" : " special");
-            button.classList.toggle("selected", state.selectedCard === index);
-            button.disabled = !myTurn;
-            button.appendChild(pictureImage(imageName, label));
+    $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
+    $("player-two").querySelector(".name").textContent = displayName(message.playerTwoName, "TWO");
 
-            const caption = document.createElement("span");
-            caption.className = "label";
-            caption.textContent = label;
-            button.appendChild(caption);
-            button.addEventListener("click", () => selectCard(index));
-            handElement.appendChild(button);
-        });
+    $("board").classList.add("hidden");
+    $("card-area").classList.remove("hidden");
+    buildCardBoard();
+    setDeckInfo(message.cardsLeft);
+    renderTurn();
+    show("game");
+  }
 
-        renderTargets();
-    }
+  function buildCardBoard() {
+    const board = $("card-board");
+    board.innerHTML = "";
+    board.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
 
-    function selectCard(index) {
-        state.selectedCard = state.selectedCard === index ? null : index;
-        renderHand();
-    }
+    for (let row = 0; row < state.size; row++) {
+      for (let column = 0; column < state.size; column++) {
+        const square = document.createElement("div");
+        square.className = "square";
+        square.id = `square-${row}-${column}`;
 
-    // The squares the selected card can be played on. Only a hint: the server checks every move.
-    function canPlayOn(card, row, column) {
         const picture = state.board[row][column];
-        const disc = state.discs[row][column];
-        switch (card.kind) {
-            case "PICTURE": return picture === card.picture && disc === null;
-            case "WILD": return picture !== null && disc === null;
-            case "REMOVE": return disc !== null && disc !== state.you;
-            default: return false;
-        }
-    }
-
-    function renderTargets() {
-        const card = state.selectedCard === null ? null : state.hand[state.selectedCard];
-        const myTurn = !state.over && state.currentPlayer === state.you;
-
-        for (let row = 0; row < state.size; row++) {
-            for (let column = 0; column < state.size; column++) {
-                const target = myTurn && card !== null && canPlayOn(card, row, column);
-                $(`square-${row}-${column}`).classList.toggle("target", target);
-            }
-        }
-    }
-
-    // Clicking a square plays the selected card. With no card selected,
-    // a picture card that matches the square is played straight away, which is easier for small children.
-    function clickSquare(row, column) {
-        if (state.over || state.currentPlayer !== state.you) {
-            return;
-        }
-
-        let index = state.selectedCard;
-        if (index === null) {
-            index = state.hand.findIndex((card) => card.kind === "PICTURE" && canPlayOn(card, row, column));
-            if (index === -1) {
-                toast("בחר קלף מהקלפים שלך");
-                return;
-            }
-        }
-
-        if (!canPlayOn(state.hand[index], row, column)) {
-            toast("הקלף הזה לא מתאים למשבצת הזו");
-            return;
-        }
-
-        send({ type: "CARD_MOVE", handIndex: index, row, column });
-    }
-
-    function applyCardTurn(message) {
-        if (!state) {
-            return;
-        }
-
-        document.querySelectorAll(".square.last-move").forEach((square) => square.classList.remove("last-move"));
-        const square = $(`square-${message.row}-${message.column}`);
-
-        if (message.removed) {
-            state.discs[message.row][message.column] = null;
-            const disc = square.querySelector(".disc");
-            if (disc) {
-                disc.remove();
-            }
-            toast(message.player === state.you ? "מחקת מטבע של היריב" : "היריב השתמש בקלף מחק");
+        if (picture === null) {
+          square.classList.add("free");
+          square.textContent = "חופשי";
+          square.setAttribute("aria-label", "משבצת חופשית");
         } else {
-            state.discs[message.row][message.column] = message.player;
-            const disc = document.createElement("div");
-            disc.className = "disc " + (message.player === "ONE" ? "one" : "two");
-            square.appendChild(disc);
-            if (message.card.kind === "WILD" && message.player !== state.you) {
-                toast("היריב השתמש בקלף קסם");
-            }
-        }
-        square.classList.add("last-move");
-
-        state.hand = message.hand;
-        state.selectedCard = null;
-        state.currentPlayer = message.currentPlayer;
-        setDeckInfo(message.cardsLeft);
-
-        if (message.skippedPlayers.length > 0) {
-            toast(message.skippedPlayers.includes(state.you)
-                ? "לא היה לך קלף מתאים, אז קיבלת קלפים חדשים והתור עבר"
-                : "ליריב לא היה קלף מתאים, אז התור חזר אליך");
+          square.appendChild(pictureImage(picture, PICTURES[picture]));
+          square.setAttribute("aria-label", PICTURES[picture]);
         }
 
-        if (message.status === "WON") {
-            state.over = true;
-            message.winningLine.forEach((position) => {
-                const disc = $(`square-${position.row}-${position.column}`).querySelector(".disc");
-                if (disc) {
-                    disc.classList.add("winning");
-                }
-            });
-            setStatus(message.winner === state.you ? "ניצחת! 🎉" : "הפעם היריב ניצח");
-            renderLock();
-        } else if (message.status === "DRAW") {
-            state.over = true;
-            setStatus("תיקו!");
-            renderLock();
-        } else {
-            renderTurn();
-        }
+        square.addEventListener("click", () => clickSquare(row, column));
+        board.appendChild(square);
+      }
+    }
+  }
+
+  function renderHand() {
+    const handElement = $("hand");
+    handElement.innerHTML = "";
+    const myTurn = !state.over && state.currentPlayer === state.you;
+
+    state.hand.forEach((card, index) => {
+      const isPicture = card.kind === "PICTURE";
+      const imageName = isPicture ? card.picture : card.kind;
+      const label = isPicture ? PICTURES[card.picture] : SPECIAL_CARDS[card.kind];
+
+      const button = document.createElement("button");
+      button.className = "playing-card" + (isPicture ? "" : " special");
+      button.classList.toggle("selected", state.selectedCard === index);
+      button.disabled = !myTurn;
+      button.appendChild(pictureImage(imageName, label));
+
+      const caption = document.createElement("span");
+      caption.className = "label";
+      caption.textContent = label;
+      button.appendChild(caption);
+      button.addEventListener("click", () => selectCard(index));
+      handElement.appendChild(button);
+    });
+
+    renderTargets();
+  }
+
+  function selectCard(index) {
+    state.selectedCard = state.selectedCard === index ? null : index;
+    renderHand();
+  }
+
+  // The squares the selected card can be played on. Only a hint: the server checks every move.
+  function canPlayOn(card, row, column) {
+    const picture = state.board[row][column];
+    const disc = state.discs[row][column];
+    switch (card.kind) {
+      case "PICTURE": return picture === card.picture && disc === null;
+      case "WILD": return picture !== null && disc === null;
+      case "REMOVE": return disc !== null && disc !== state.you;
+      default: return false;
+    }
+  }
+
+  function renderTargets() {
+    const card = state.selectedCard === null ? null : state.hand[state.selectedCard];
+    const myTurn = !state.over && state.currentPlayer === state.you;
+
+    for (let row = 0; row < state.size; row++) {
+      for (let column = 0; column < state.size; column++) {
+        const target = myTurn && card !== null && canPlayOn(card, row, column);
+        $(`square-${row}-${column}`).classList.toggle("target", target);
+      }
+    }
+  }
+
+  // Clicking a square plays the selected card. With no card selected,
+  // a picture card that matches the square is played straight away, which is easier for small children.
+  function clickSquare(row, column) {
+    if (state.over || state.currentPlayer !== state.you) {
+      return;
     }
 
-    function setDeckInfo(cardsLeft) {
-        $("deck-info").textContent = `נשארו ${cardsLeft} קלפים בחפיסה`;
+    let index = state.selectedCard;
+    if (index === null) {
+      index = state.hand.findIndex((card) => card.kind === "PICTURE" && canPlayOn(card, row, column));
+      if (index === -1) {
+        toast("בחר קלף מהקלפים שלך");
+        return;
+      }
     }
 
-    function setStatus(text) {
-        $("status").textContent = text;
+    if (!canPlayOn(state.hand[index], row, column)) {
+      toast("הקלף הזה לא מתאים למשבצת הזו");
+      return;
     }
 
-    // Leaving a screen closes the connection; the server then closes the room and tells the other player.
-    function goHome() {
-        if (socket) {
-            socket.close();
-            socket = null;
-        }
-        state = null;
-        queue = [];
-        show("home");
+    send({ type: "CARD_MOVE", handIndex: index, row, column });
+  }
+
+  function applyCardTurn(message) {
+    if (!state) {
+      return;
     }
 
-    document.querySelectorAll("[data-difficulty]").forEach((button) => {
-        button.addEventListener("click", () =>
-            send({
-                type: "PLAY_COMPUTER",
-                nickname: nickname(),
-                difficulty: button.dataset.difficulty,
-                mode: selectedMode,
-                boardSize: selectedSize
-            }));
-    });
+    document.querySelectorAll(".square.last-move").forEach((square) => square.classList.remove("last-move"));
+    const square = $(`square-${message.row}-${message.column}`);
 
-    $("create-room").addEventListener("click", () =>
-        send({ type: "CREATE_ROOM", nickname: nickname(), mode: selectedMode, boardSize: selectedSize }));
+    if (message.removed) {
+      state.discs[message.row][message.column] = null;
+      const disc = square.querySelector(".disc");
+      if (disc) {
+        disc.remove();
+      }
+      toast(message.player === state.you ? "מחקת מטבע של היריב" : "היריב השתמש בקלף מחק");
+    } else {
+      state.discs[message.row][message.column] = message.player;
+      const disc = document.createElement("div");
+      disc.className = "disc " + (message.player === "ONE" ? "one" : "two");
+      square.appendChild(disc);
+      if (message.card.kind === "WILD" && message.player !== state.you) {
+        toast("היריב השתמש בקלף קסם");
+      }
+    }
+    square.classList.add("last-move");
 
-    document.querySelectorAll("#mode-choice button").forEach((button) => {
-        button.addEventListener("click", () => {
-            selectedMode = button.dataset.mode;
-            document.querySelectorAll("#mode-choice button").forEach((b) => b.classList.toggle("selected", b === button));
-            $("size-area").classList.toggle("hidden", selectedMode !== "CARDS");
-        });
-    });
+    state.hand = message.hand;
+    state.selectedCard = null;
+    state.currentPlayer = message.currentPlayer;
+    setDeckInfo(message.cardsLeft);
 
-    document.querySelectorAll("#size-choice button").forEach((button) => {
-        button.addEventListener("click", () => {
-            selectedSize = button.dataset.size;
-            document.querySelectorAll("#size-choice button").forEach((b) => b.classList.toggle("selected", b === button));
-        });
-    });
+    if (message.skippedPlayers.length > 0) {
+      toast(message.skippedPlayers.includes(state.you)
+          ? "לא היה לך קלף מתאים, אז קיבלת קלפים חדשים והתור עבר"
+          : "ליריב לא היה קלף מתאים, אז התור חזר אליך");
+    }
 
-    $("join-room").addEventListener("click", () => {
-        const code = $("room-code").value.trim().toUpperCase();
-        if (!code) {
-            toast("הקלד קוד של חדר");
-            return;
+    if (message.status === "WON") {
+      state.over = true;
+      message.winningLine.forEach((position) => {
+        const disc = $(`square-${position.row}-${position.column}`).querySelector(".disc");
+        if (disc) {
+          disc.classList.add("winning");
         }
-        send({ type: "JOIN_ROOM", code, nickname: nickname() });
-    });
+      });
+      setStatus(message.winner === state.you ? "ניצחת! 🎉" : "הפעם היריב ניצח");
+      renderLock();
+    } else if (message.status === "DRAW") {
+      state.over = true;
+      setStatus("תיקו!");
+      renderLock();
+    } else {
+      renderTurn();
+    }
+  }
 
-    $("copy-code").addEventListener("click", async () => {
-        try {
-            await navigator.clipboard.writeText($("waiting-code").textContent);
-            toast("הקוד הועתק");
-        } catch {
-            toast("לא הצלחתי להעתיק, אפשר להעתיק ידנית");
-        }
-    });
+  function setDeckInfo(cardsLeft) {
+    $("deck-info").textContent = `נשארו ${cardsLeft} קלפים בחפיסה`;
+  }
 
-    document.querySelectorAll(".back").forEach((button) => button.addEventListener("click", goHome));
+  function setStatus(text) {
+    $("status").textContent = text;
+  }
+
+  // Leaving a screen closes the connection; the server then closes the room and tells the other player.
+  function goHome() {
+    if (socket) {
+      socket.close();
+      socket = null;
+    }
+    state = null;
+    queue = [];
+    show("home");
+  }
+
+  document.querySelectorAll("[data-difficulty]").forEach((button) => {
+    button.addEventListener("click", () =>
+      send({
+        type: "PLAY_COMPUTER",
+        nickname: nickname(),
+        difficulty: button.dataset.difficulty,
+        mode: selectedMode,
+        boardSize: selectedSize
+      }));
+  });
+
+  $("create-room").addEventListener("click", () =>
+      send({ type: "CREATE_ROOM", nickname: nickname(), mode: selectedMode, boardSize: selectedSize }));
+
+  document.querySelectorAll("#mode-choice button").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedMode = button.dataset.mode;
+      document.querySelectorAll("#mode-choice button").forEach((b) => b.classList.toggle("selected", b === button));
+      $("size-area").classList.toggle("hidden", selectedMode !== "CARDS");
+    });
+  });
+
+  document.querySelectorAll("#size-choice button").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedSize = button.dataset.size;
+      document.querySelectorAll("#size-choice button").forEach((b) => b.classList.toggle("selected", b === button));
+    });
+  });
+
+  $("join-room").addEventListener("click", () => {
+    const code = $("room-code").value.trim().toUpperCase();
+    if (!code) {
+      toast("הקלד קוד של חדר");
+      return;
+    }
+    send({ type: "JOIN_ROOM", code, nickname: nickname() });
+  });
+
+  $("copy-code").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($("waiting-code").textContent);
+      toast("הקוד הועתק");
+    } catch {
+      toast("לא הצלחתי להעתיק, אפשר להעתיק ידנית");
+    }
+  });
+
+  document.querySelectorAll(".back").forEach((button) => button.addEventListener("click", goHome));
 </script>
 </body>
 </html>
