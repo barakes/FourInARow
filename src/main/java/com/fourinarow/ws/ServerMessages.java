@@ -70,6 +70,13 @@ public final class ServerMessages {
 
     // ---------- Both games ----------
 
+    // Sent to the other player when one player asks for a rematch.
+    public record RematchRequested(String type) {
+        public RematchRequested() {
+            this("REMATCH_REQUESTED");
+        }
+    }
+
     // Sent to the remaining player when the other one disconnects.
     public record OpponentLeft(String type) {
         public OpponentLeft() {

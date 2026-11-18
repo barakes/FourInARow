@@ -15,5 +15,9 @@ public interface GameRoom {
     // A move in the card game.
     void playCard(Connection connection, int handIndex, int row, int column);
 
+    // Asks for a new game in the same room once this one is over.
+    // Against the computer it starts right away; between two people, both have to ask.
+    void requestRematch(Connection connection);
+
     void leave(Connection connection);
 }

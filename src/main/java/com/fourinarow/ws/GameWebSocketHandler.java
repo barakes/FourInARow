@@ -92,6 +92,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     connection, request.column());
             case CARD_MOVE -> roomService.cardMove(
                     connection, request.handIndex(), request.row(), request.column());
+            case REMATCH -> roomService.rematch(connection);
         }
     }
 }

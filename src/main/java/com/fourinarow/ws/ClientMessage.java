@@ -11,6 +11,7 @@ import com.fourinarow.room.GameMode;
 //   PLAY_COMPUTER -> nickname, difficulty, mode, boardSize (cards only)
 //   MOVE          -> column                    (classic game)
 //   CARD_MOVE     -> handIndex, row, column    (card game)
+//   REMATCH       -> nothing                   (both games, after a game is over)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ClientMessage(Type type, String nickname, String code, Difficulty difficulty,
                             GameMode mode, BoardSize boardSize,
@@ -21,6 +22,7 @@ public record ClientMessage(Type type, String nickname, String code, Difficulty 
         JOIN_ROOM,
         PLAY_COMPUTER,
         MOVE,
-        CARD_MOVE
+        CARD_MOVE,
+        REMATCH
     }
 }

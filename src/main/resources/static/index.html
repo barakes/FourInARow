@@ -7,10 +7,13 @@
 
   <!-- What search engines show under the title. -->
   <meta name="description" content="משחק ארבע בשורה חינמי בדפדפן: נגד המחשב בשלוש רמות קושי, או עם חבר בזמן אמת עם קוד חדר. גם בגרסת קלפים עם תמונות. בלי הרשמה, מתאים לילדים.">
-  <meta name="google-site-verification" content="eMP0VtuxCPJ_BuNRB4YsXZNNolIDngiSvCLCHmjYelQ" />
+
   <!-- The one official address of this page. If the site moves to another domain, change it here. -->
   <link rel="canonical" href="https://fourinarow-990e.onrender.com/">
   <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Proves to Google Search Console that this site is ours. -->
+  <meta name="google-site-verification" content="eMP0VtuxCPJ_BuNRB4YsXZNNolIDngiSvCLCHmjYelQ" />
 
   <!-- The preview shown when the link is shared (WhatsApp, LinkedIn, Facebook...). -->
   <meta property="og:type" content="website">
@@ -102,6 +105,7 @@
 
     button:hover { background: var(--primary-dark); }
     button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.55; cursor: default; transform: none; }
     button.secondary { background: #e3e8fb; color: var(--primary-dark); }
     button.secondary:hover { background: #d3dbf8; }
 
@@ -418,7 +422,8 @@
     </div>
 
     <div class="row actions">
-      <button class="back secondary">משחק חדש</button>
+      <button id="rematch" class="hidden">משחק חוזר</button>
+      <button class="back secondary">חזרה למסך הפתיחה</button>
     </div>
   </section>
 
@@ -445,7 +450,8 @@
     "This cell is already taken": "המשבצת הזו כבר תפוסה",
     "The free cell can't be taken": "אי אפשר להניח על המשבצת החופשית",
     "You can only remove an opponent's disc": "אפשר למחוק רק מטבע של היריב",
-    "It is not your turn": "עכשיו לא התור שלך"
+    "It is not your turn": "עכשיו לא התור שלך",
+    "The game is not over yet": "המשחק עוד לא נגמר"
   };
 
   // The pictures on the board and the cards. The server sends the names; the page shows a picture and a Hebrew name.
@@ -576,10 +582,17 @@
         applyCardTurn(message);
         break;
       case "OPPONENT_LEFT":
-        if (state && !state.over) {
+        if (state) {
           state.over = true;
+          state.opponentLeft = true;
           setStatus("היריב יצא מהמשחק");
           renderLock();
+        }
+        break;
+      case "REMATCH_REQUESTED":
+        if (state && !state.opponentLeft) {
+          setStatus("היריב רוצה משחק חוזר!");
+          toast("היריב רוצה משחק חוזר. לחץ על הכפתור כדי להסכים");
         }
         break;
       case "ERROR":
@@ -600,6 +613,7 @@
     $("board").classList.remove("hidden");
     $("card-area").classList.add("hidden");
 
+    state.againstComputer = message.playerTwoName.startsWith("Computer (");
     $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
     $("player-two").querySelector(".name").textContent = displayName(message.playerTwoName, "TWO");
 
@@ -610,8 +624,8 @@
 
   function displayName(name, player) {
     const translated = name.startsWith("Computer (")
-        ? "המחשב (" + ({ easy: "קל", medium: "בינוני", hard: "קשה" }[name.slice(10, -1)] || "") + ")"
-        : name;
+            ? "המחשב (" + ({ easy: "קל", medium: "בינוני", hard: "קשה" }[name.slice(10, -1)] || "") + ")"
+            : name;
     return player === state.you ? translated + " (אתה)" : translated;
   }
 
@@ -686,6 +700,11 @@
   function renderLock() {
     const locked = !state || state.over || state.currentPlayer !== state.you;
     $("board").classList.toggle("locked", locked);
+
+    // "Rematch" appears when the game is over and the opponent is still here.
+    const canRematch = Boolean(state && state.over && !state.opponentLeft);
+    $("rematch").classList.toggle("hidden", !canRematch);
+    $("rematch").disabled = Boolean(state && state.rematchSent);
     if (state && state.mode === "CARDS") {
       renderHand();
     }
@@ -710,6 +729,7 @@
       over: false
     };
 
+    state.againstComputer = message.playerTwoName.startsWith("Computer (");
     $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
     $("player-two").querySelector(".name").textContent = displayName(message.playerTwoName, "TWO");
 
@@ -861,8 +881,8 @@
 
     if (message.skippedPlayers.length > 0) {
       toast(message.skippedPlayers.includes(state.you)
-          ? "לא היה לך קלף מתאים, אז קיבלת קלפים חדשים והתור עבר"
-          : "ליריב לא היה קלף מתאים, אז התור חזר אליך");
+              ? "לא היה לך קלף מתאים, אז קיבלת קלפים חדשים והתור עבר"
+              : "ליריב לא היה קלף מתאים, אז התור חזר אליך");
     }
 
     if (message.status === "WON") {
@@ -905,17 +925,17 @@
 
   document.querySelectorAll("[data-difficulty]").forEach((button) => {
     button.addEventListener("click", () =>
-      send({
-        type: "PLAY_COMPUTER",
-        nickname: nickname(),
-        difficulty: button.dataset.difficulty,
-        mode: selectedMode,
-        boardSize: selectedSize
-      }));
+            send({
+              type: "PLAY_COMPUTER",
+              nickname: nickname(),
+              difficulty: button.dataset.difficulty,
+              mode: selectedMode,
+              boardSize: selectedSize
+            }));
   });
 
   $("create-room").addEventListener("click", () =>
-      send({ type: "CREATE_ROOM", nickname: nickname(), mode: selectedMode, boardSize: selectedSize }));
+          send({ type: "CREATE_ROOM", nickname: nickname(), mode: selectedMode, boardSize: selectedSize }));
 
   document.querySelectorAll("#mode-choice button").forEach((button) => {
     button.addEventListener("click", () => {
@@ -951,6 +971,18 @@
   });
 
   document.querySelectorAll(".back").forEach((button) => button.addEventListener("click", goHome));
+
+  $("rematch").addEventListener("click", () => {
+    if (!state || !state.over || state.opponentLeft) {
+      return;
+    }
+    state.rematchSent = true;
+    renderLock();
+    if (!state.againstComputer) {
+      setStatus("מחכים שהיריב יסכים...");
+    }
+    send({ type: "REMATCH" });
+  });
 </script>
 </body>
 </html>

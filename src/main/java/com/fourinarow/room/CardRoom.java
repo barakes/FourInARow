@@ -9,14 +9,17 @@ import com.fourinarow.game.Player;
 import com.fourinarow.ws.ServerMessages.CardGameStarted;
 import com.fourinarow.ws.ServerMessages.CardTurnPlayed;
 import com.fourinarow.ws.ServerMessages.OpponentLeft;
+import com.fourinarow.ws.ServerMessages.RematchRequested;
 import com.fourinarow.ws.ServerMessages.RoomCreated;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 // One card game between two players: two people, or a person and the computer.
 // Every message that contains a hand is built separately for each player, so nobody ever receives the opponent's cards.
@@ -27,12 +30,17 @@ public class CardRoom implements GameRoom {
     }
 
     private final String code;
-    private final CardGame game;
+    private final BoardSize boardSize;
+    private final Random random;
+    private CardGame game;
     private final Map<Player, Seat> seats = new EnumMap<>(Player.class);
     private final CardComputerPlayer computer;
+    private final Set<Player> rematchRequests = EnumSet.noneOf(Player.class);
 
     private CardRoom(String code, BoardSize boardSize, Random random, CardComputerPlayer computer) {
         this.code = code;
+        this.boardSize = boardSize;
+        this.random = random;
         this.game = new CardGame(boardSize, random);
         this.computer = computer;
     }
@@ -83,6 +91,35 @@ public class CardRoom implements GameRoom {
     }
 
     @Override
+    public synchronized void requestRematch(Connection connection) {
+        if (!isFull()) {
+            throw new RoomException("Waiting for another player to join");
+        }
+        if (game.getStatus() == CardGame.Status.IN_PROGRESS) {
+            throw new RoomException("The game is not over yet");
+        }
+
+        Player player = playerOf(connection);
+
+        // Against the computer there is nobody to ask.
+        if (computer != null) {
+            startNewGame();
+            return;
+        }
+
+        if (!rematchRequests.add(player)) {
+            return;
+        }
+        if (rematchRequests.size() < 2) {
+            seats.get(player.opponent()).connection().send(new RematchRequested());
+            return;
+        }
+
+        // Both agreed. No need to swap seats: the card game picks a random first player anyway.
+        startNewGame();
+    }
+
+    @Override
     public synchronized void leave(Connection connection) {
         for (Seat seat : seats.values()) {
             if (seat.connection() != null && !seat.connection().id().equals(connection.id())) {
@@ -104,6 +141,14 @@ public class CardRoom implements GameRoom {
     // Package-private, for tests.
     CardGame getGame() {
         return game;
+    }
+
+    // A fresh board, deck and hands, with the same board size.
+    private void startNewGame() {
+        rematchRequests.clear();
+        game = new CardGame(boardSize, random);
+        sendGameStarted();
+        playComputerTurns();
     }
 
     // The computer keeps playing while it is its turn (it can get several turns if the person is stuck).

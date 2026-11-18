@@ -78,6 +78,10 @@ public class RoomService {
         roomOf(connection).playCard(connection, handIndex, row, column);
     }
 
+    public void rematch(Connection connection) {
+        roomOf(connection).requestRematch(connection);
+    }
+
     // Called when a player disconnects or starts another game. The whole room is closed.
     public synchronized void leave(Connection connection) {
         GameRoom room = roomsByConnection.remove(connection.id());

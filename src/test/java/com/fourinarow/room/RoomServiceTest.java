@@ -4,12 +4,15 @@ import com.fourinarow.ai.Difficulty;
 import com.fourinarow.cards.BoardSize;
 import com.fourinarow.cards.Card;
 import com.fourinarow.cards.Picture;
+import com.fourinarow.game.Game;
+import com.fourinarow.game.InvalidMoveException;
 import com.fourinarow.game.Player;
 import com.fourinarow.ws.ServerMessages.CardGameStarted;
 import com.fourinarow.ws.ServerMessages.CardTurnPlayed;
 import com.fourinarow.ws.ServerMessages.GameStarted;
 import com.fourinarow.ws.ServerMessages.MoveMade;
 import com.fourinarow.ws.ServerMessages.OpponentLeft;
+import com.fourinarow.ws.ServerMessages.RematchRequested;
 import com.fourinarow.ws.ServerMessages.RoomCreated;
 import org.junit.jupiter.api.Test;
 
@@ -198,6 +201,79 @@ class RoomServiceTest {
 
         assertThatThrownBy(() -> service.move(host, 3)).isInstanceOf(RoomException.class);
         assertThatThrownBy(() -> service.cardMove(guest, 0, 0, 0)).isInstanceOf(RoomException.class);
+    }
+
+    // ---------- Rematch ----------
+
+    @Test
+    void aRematchCannotBeRequestedBeforeTheGameIsOver() {
+        service.createRoom(host, "Dana", GameMode.CLASSIC, null);
+        service.joinRoom(guest, host.messagesOf(RoomCreated.class).getFirst().code(), "Tom");
+
+        assertThatThrownBy(() -> service.rematch(host))
+                .isInstanceOf(RoomException.class)
+                .hasMessageContaining("not over");
+    }
+
+    @Test
+    void aCardRematchCannotBeRequestedBeforeTheGameIsOver() {
+        service.playAgainstComputer(host, "Dana", Difficulty.EASY, GameMode.CARDS, BoardSize.SMALL);
+
+        assertThatThrownBy(() -> service.rematch(host))
+                .isInstanceOf(RoomException.class)
+                .hasMessageContaining("not over");
+    }
+
+    @Test
+    void aClassicRematchStartsWhenBothAgreeAndThePlayersSwapWhoStarts() {
+        service.createRoom(host, "Dana", GameMode.CLASSIC, null);
+        service.joinRoom(guest, host.messagesOf(RoomCreated.class).getFirst().code(), "Tom");
+
+        // The host stacks four in column 0 while the guest plays column 1: the host wins.
+        service.move(host, 0);
+        service.move(guest, 1);
+        service.move(host, 0);
+        service.move(guest, 1);
+        service.move(host, 0);
+        service.move(guest, 1);
+        service.move(host, 0);
+        assertThat(host.messagesOf(MoveMade.class).getLast().status()).isEqualTo(Game.Status.WON);
+
+        // The host asks: the guest is told once, even if the host clicks twice.
+        service.rematch(host);
+        service.rematch(host);
+        assertThat(guest.messagesOf(RematchRequested.class)).hasSize(1);
+        assertThat(host.messagesOf(GameStarted.class)).hasSize(1);
+
+        // The guest agrees: a new game starts, and this time the guest goes first.
+        service.rematch(guest);
+        assertThat(host.messagesOf(GameStarted.class).getLast().you()).isEqualTo(Player.TWO);
+        assertThat(guest.messagesOf(GameStarted.class).getLast().you()).isEqualTo(Player.ONE);
+
+        service.move(guest, 3);
+        assertThat(host.messagesOf(MoveMade.class).getLast().column()).isEqualTo(3);
+    }
+
+    @Test
+    void aRematchAgainstTheComputerStartsRightAway() {
+        service.playAgainstComputer(host, "Dana", Difficulty.EASY, GameMode.CLASSIC, null);
+
+        // Play columns in turn until the game is over. A full column is simply skipped.
+        int column = 0;
+        while (host.messagesOf(MoveMade.class).isEmpty()
+                || host.messagesOf(MoveMade.class).getLast().status() == Game.Status.IN_PROGRESS) {
+            try {
+                service.move(host, column);
+            } catch (InvalidMoveException e) {
+                // The column is full; try the next one.
+            }
+            column = (column + 1) % 7;
+        }
+
+        service.rematch(host);
+
+        assertThat(host.messagesOf(GameStarted.class)).hasSize(2);
+        assertThat(host.messagesOf(GameStarted.class).getLast().you()).isEqualTo(Player.ONE);
     }
 
     // At the start the board is empty: a picture card fits its picture's cell, and a wild card fits any cell.

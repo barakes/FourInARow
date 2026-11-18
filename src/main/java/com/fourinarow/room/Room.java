@@ -7,13 +7,16 @@ import com.fourinarow.game.Player;
 import com.fourinarow.ws.ServerMessages.GameStarted;
 import com.fourinarow.ws.ServerMessages.MoveMade;
 import com.fourinarow.ws.ServerMessages.OpponentLeft;
+import com.fourinarow.ws.ServerMessages.RematchRequested;
 import com.fourinarow.ws.ServerMessages.RoomCreated;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 
 // One classic game between two players: two people, or a person and the computer.
 // All methods are synchronized, so moves from both players are handled one at a time.
@@ -24,9 +27,10 @@ public class Room implements GameRoom {
     }
 
     private final String code;
-    private final Game game = new Game();
+    private Game game = new Game();
     private final Map<Player, Seat> seats = new EnumMap<>(Player.class);
     private final ComputerPlayer computer;
+    private final Set<Player> rematchRequests = EnumSet.noneOf(Player.class);
 
     private Room(String code, ComputerPlayer computer) {
         this.code = code;
@@ -81,6 +85,38 @@ public class Room implements GameRoom {
         throw new RoomException("This room is playing the classic game");
     }
 
+    @Override
+    public synchronized void requestRematch(Connection connection) {
+        if (!isFull()) {
+            throw new RoomException("Waiting for another player to join");
+        }
+        if (game.getStatus() == Game.Status.IN_PROGRESS) {
+            throw new RoomException("The game is not over yet");
+        }
+
+        Player player = playerOf(connection);
+
+        // Against the computer there is nobody to ask. The person keeps moving first.
+        if (computer != null) {
+            startNewGame();
+            return;
+        }
+
+        if (!rematchRequests.add(player)) {
+            return;
+        }
+        if (rematchRequests.size() < 2) {
+            seats.get(player.opponent()).connection().send(new RematchRequested());
+            return;
+        }
+
+        // Both agreed. Player one always starts, so the players swap seats: the one who went second now goes first.
+        Seat first = seats.get(Player.ONE);
+        seats.put(Player.ONE, seats.get(Player.TWO));
+        seats.put(Player.TWO, first);
+        startNewGame();
+    }
+
     // Called when a player disconnects: the other person, if any, is told.
     @Override
     public synchronized void leave(Connection connection) {
@@ -114,6 +150,12 @@ public class Room implements GameRoom {
             }
         }
         throw new RoomException("You are not a player in this room");
+    }
+
+    private void startNewGame() {
+        rematchRequests.clear();
+        game = new Game();
+        sendGameStarted();
     }
 
     private MoveMade moveMade(Game.MoveResult result) {
