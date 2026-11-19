@@ -6,7 +6,7 @@
   <title>ארבע בשורה אונליין – משחק חינמי נגד המחשב או עם חבר</title>
 
   <!-- What search engines show under the title. -->
-  <meta name="description" content="משחק ארבע בשורה חינמי בדפדפן: נגד המחשב בשלוש רמות קושי, או עם חבר בזמן אמת עם קוד חדר. גם בגרסת קלפים עם תמונות. בלי הרשמה, מתאים לילדים.">
+  <meta name="description" content="משחק ארבע בשורה חינמי בדפדפן: נגד המחשב בשלוש רמות קושי, או עם חבר בזמן אמת עם קוד חדר. גם בגרסת קלפים עם תמונות. בלי חובת הרשמה, מתאים לילדים. ולמי שרוצה: משחק נגד שחקנים אקראיים עם דירוג וטבלת מובילים.">
 
   <!-- The one official address of this page. If the site moves to another domain, change it here. -->
   <link rel="canonical" href="https://fourinarow-990e.onrender.com/">
@@ -337,6 +337,39 @@
     .playing-card:disabled { cursor: default; opacity: 0.6; transform: none; }
 
     .deck-info { text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
+
+    /* ---------- Accounts, rated games and the leaderboard ---------- */
+    .hint { color: var(--muted); font-size: 0.9rem; margin: 6px 0 12px; }
+    .account-line { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .account-line .who { flex: 1; min-width: 0; }
+    .account-line .who strong { overflow-wrap: anywhere; }
+    .account-line button { flex: 0 0 auto; padding: 10px 14px; font-size: 1rem; }
+    .stats { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+    .checkbox { display: flex; align-items: center; gap: 10px; font-weight: 600; margin: 4px 0 16px; cursor: pointer; }
+    .checkbox input { width: 22px; height: 22px; flex: 0 0 22px; margin: 0; }
+    .switch-link { text-align: center; margin: 14px 0 0; }
+    .switch-link a { color: var(--primary-dark); font-weight: 600; }
+
+    .leaderboard { width: 100%; border-collapse: collapse; font-size: 1rem; }
+    .leaderboard th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+    .leaderboard th, .leaderboard td { padding: 8px 4px; text-align: right; border-bottom: 1px solid #e3e8fb; }
+    .leaderboard td.name { overflow-wrap: anywhere; }
+    .leaderboard .number { text-align: center; width: 4.2em; }
+    .leaderboard tr.me td { font-weight: 700; background: #fff9db; }
+
+    .rating-note { text-align: center; font-weight: 700; margin: -6px 0 12px; min-height: 1.4em; }
+    .rating-note.up { color: #2b8a3e; }
+    .rating-note.down { color: #c22c44; }
+
+    .searching-discs { display: flex; justify-content: center; gap: 12px; margin: 18px 0; }
+    .searching-discs span { width: 26px; height: 26px; border-radius: 50%; animation: bounce 1s ease-in-out infinite alternate; }
+    .searching-discs span:nth-child(1) { background: var(--one); }
+    .searching-discs span:nth-child(2) { background: var(--two); animation-delay: 0.25s; }
+    .searching-discs span:nth-child(3) { background: var(--one); animation-delay: 0.5s; }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-12px); }
+    }
   </style>
 </head>
 <body>
@@ -366,6 +399,28 @@
     </div>
 
     <div class="card">
+      <h2>משחק נגד שחקן אקראי, עם דירוג</h2>
+      <div id="rated-guest">
+        <p class="hint">כדי לצבור דירוג ולהופיע בטבלת המובילים צריך חשבון. בלי חשבון אפשר לשחק נגד המחשב או עם חבר.</p>
+        <div class="row">
+          <button id="open-login">כניסה</button>
+          <button id="open-register" class="secondary">הרשמה</button>
+        </div>
+      </div>
+      <div id="rated-user" class="hidden">
+        <div class="account-line">
+          <div class="who">
+            <strong id="account-name"></strong> · דירוג <strong id="account-rating"></strong>
+            <div class="stats" id="account-stats"></div>
+          </div>
+          <button id="logout" class="secondary">התנתק</button>
+        </div>
+        <button id="find-opponent" style="width: 100%;">חפש יריב</button>
+        <p class="hint" id="find-hint"></p>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>משחק נגד המחשב</h2>
       <div class="row">
         <button data-difficulty="EASY">קל</button>
@@ -382,6 +437,47 @@
         <input id="room-code" maxlength="5" placeholder="למשל K7Q2M" autocomplete="off" style="direction: ltr; text-transform: uppercase;">
         <button id="join-room" class="secondary" style="flex: 0 0 auto;">הצטרף</button>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>טבלת המובילים</h2>
+      <table class="leaderboard" id="leaderboard">
+        <thead>
+        <tr><th class="number">מקום</th><th>שחקן</th><th class="number">דירוג</th><th class="number">ניצחונות</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted" id="leaderboard-empty">עוד אין שחקנים בטבלה. אולי תהיה הראשון?</p>
+    </div>
+  </section>
+
+  <!-- Log in or register. A real <form>, so the browser can offer to save the password. -->
+  <section id="account" class="hidden">
+    <form class="card" id="account-form" novalidate>
+      <h2 id="account-title">כניסה</h2>
+      <label for="username">שם משתמש</label>
+      <input id="username" name="username" maxlength="20" autocomplete="username" dir="auto">
+      <p class="hint">3 עד 20 אותיות, ספרות או _</p>
+      <label for="password">סיסמה</label>
+      <input id="password" name="password" type="password" maxlength="72" autocomplete="current-password" dir="ltr">
+      <p class="hint">לפחות 6 תווים</p>
+      <label class="checkbox"><input type="checkbox" id="remember-me" checked> זכור אותי במכשיר הזה</label>
+      <div class="row">
+        <button type="submit" id="account-submit">כניסה</button>
+        <button type="button" class="back secondary">חזרה</button>
+      </div>
+      <p class="switch-link"><a href="#" id="account-switch">אין לך חשבון? להרשמה</a></p>
+    </form>
+  </section>
+
+  <!-- Waiting in the queue for a random opponent -->
+  <section id="searching" class="hidden">
+    <div class="card">
+      <h2 style="text-align: center;">מחפשים לך יריב...</h2>
+      <p class="muted" id="searching-mode"></p>
+      <div class="searching-discs" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="muted">המשחק יתחיל ברגע שעוד שחקן יחפש יריב באותו משחק.</p>
+      <button class="back secondary" style="width: 100%;">ביטול</button>
     </div>
   </section>
 
@@ -412,6 +508,7 @@
     </div>
 
     <div class="status" id="status" aria-live="polite"></div>
+    <div class="rating-note" id="rating-note" aria-live="polite"></div>
     <div class="board" id="board"></div>
 
     <div id="card-area" class="hidden">
@@ -428,7 +525,7 @@
   </section>
 
   <footer>
-    <p>ארבע בשורה בחינם, ישר בדפדפן: נגד המחשב או עם חבר, ברגיל או עם קלפים. בלי הרשמה.</p>
+    <p>ארבע בשורה בחינם, ישר בדפדפן: נגד המחשב או עם חבר, ברגיל או עם קלפים. בלי חובת הרשמה.</p>
     <p><a href="https://github.com/barakes/FourInARow" target="_blank" rel="noopener">קוד המקור בגיטהאב</a></p>
   </footer>
 </main>
@@ -451,7 +548,14 @@
     "The free cell can't be taken": "אי אפשר להניח על המשבצת החופשית",
     "You can only remove an opponent's disc": "אפשר למחוק רק מטבע של היריב",
     "It is not your turn": "עכשיו לא התור שלך",
-    "The game is not over yet": "המשחק עוד לא נגמר"
+    "The game is not over yet": "המשחק עוד לא נגמר",
+    "Username must be 3-20 letters, digits or _": "שם המשתמש צריך להיות 3 עד 20 אותיות, ספרות או _",
+    "Password must be at least 6 characters": "הסיסמה צריכה להיות לפחות 6 תווים",
+    "Password is too long": "הסיסמה ארוכה מדי",
+    "This username is taken": "שם המשתמש הזה כבר תפוס, נסה שם אחר",
+    "Wrong username or password": "שם משתמש או סיסמה לא נכונים",
+    "Please log in again": "צריך להיכנס שוב לחשבון",
+    "You are already looking for an opponent in another window": "אתה כבר מחפש יריב בחלון אחר"
   };
 
   // The pictures on the board and the cards. The server sends the names; the page shows a picture and a Hebrew name.
@@ -484,7 +588,8 @@
   // A move by the opponent is shown a little later, so it doesn't appear at the same moment as yours.
   const OPPONENT_MOVE_DELAY_MS = 600;
 
-  const screens = ["home", "waiting", "game"];
+  const screens = ["home", "account", "searching", "waiting", "game"];
+  let currentScreen = "home";
   const $ = (id) => document.getElementById(id);
 
   let socket = null;
@@ -493,6 +598,7 @@
   let processing = false;
 
   function show(screen) {
+    currentScreen = screen;
     screens.forEach((name) => $(name).classList.toggle("hidden", name !== screen));
   }
 
@@ -535,6 +641,9 @@
         toast("החיבור לשרת נותק");
         state.over = true;
         renderLock();
+      } else if (currentScreen === "searching") {
+        toast("החיבור לשרת נותק");
+        goHome();
       }
     };
   }
@@ -595,8 +704,21 @@
           toast("היריב רוצה משחק חוזר. לחץ על הכפתור כדי להסכים");
         }
         break;
+      case "WAITING_FOR_OPPONENT":
+        show("searching");
+        break;
+      case "RATING_CHANGED":
+        showRatingChange(message);
+        break;
       case "ERROR":
         toast(ERRORS[message.message] || "משהו השתבש, נסה שוב");
+        if (message.message === "Please log in again") {
+          logOutLocally();
+          goHome();
+          openAccount("login");
+        } else if (currentScreen === "searching") {
+          goHome();
+        }
         break;
     }
   }
@@ -612,6 +734,7 @@
     };
     $("board").classList.remove("hidden");
     $("card-area").classList.add("hidden");
+    setRatingNote("", "");
 
     state.againstComputer = message.playerTwoName.startsWith("Computer (");
     $("player-one").querySelector(".name").textContent = displayName(message.playerOneName, "ONE");
@@ -735,6 +858,7 @@
 
     $("board").classList.add("hidden");
     $("card-area").classList.remove("hidden");
+    setRatingNote("", "");
     buildCardBoard();
     setDeckInfo(message.cardsLeft);
     renderTurn();
@@ -920,7 +1044,12 @@
     }
     state = null;
     queue = [];
+    ratedGame = false;
+    leaveArmedAt = 0;
     show("home");
+    // The rating may have changed during the game.
+    loadAccount();
+    loadLeaderboard();
   }
 
   document.querySelectorAll("[data-difficulty]").forEach((button) => {
@@ -970,7 +1099,18 @@
     }
   });
 
-  document.querySelectorAll(".back").forEach((button) => button.addEventListener("click", goHome));
+  document.querySelectorAll(".back").forEach((button) => button.addEventListener("click", onBack));
+
+  // Leaving a rated game in the middle counts as a loss, so the first click only warns.
+  function onBack() {
+    const inRatedGame = ratedGame && state && !state.over && currentScreen === "game";
+    if (inRatedGame && Date.now() - leaveArmedAt > 4000) {
+      leaveArmedAt = Date.now();
+      toast("יציאה באמצע משחק עם דירוג נחשבת הפסד. לחץ שוב כדי לצאת");
+      return;
+    }
+    goHome();
+  }
 
   $("rematch").addEventListener("click", () => {
     if (!state || !state.over || state.opponentLeft) {
@@ -983,6 +1123,231 @@
     }
     send({ type: "REMATCH" });
   });
+
+  // ---------- Accounts, rated games and the leaderboard ----------
+
+  // The login token. With "remember me" it is kept in localStorage (stays after the browser is closed),
+  // otherwise in sessionStorage (gone when the browser is closed). Storage can be blocked, so every use is in try/catch.
+  const TOKEN_KEY = "fourinarow-token";
+  let token = null;
+  let account = null;            // { username, rating, wins, losses, draws } when logged in
+  let accountMode = "login";     // "login" or "register"
+  let ratedGame = false;         // true from "find opponent" until going back home
+  let leaveArmedAt = 0;
+
+  function readStoredToken() {
+    try {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  function storeToken(value, remember) {
+    clearStoredToken();
+    try {
+      (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, value);
+    } catch {
+      // Not stored: the player stays logged in only until the page is closed.
+    }
+  }
+
+  function clearStoredToken() {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // Nothing to clear.
+    }
+  }
+
+  // A request to the server's HTTP addresses, with the token if there is one.
+  async function api(path, method = "GET", body = undefined) {
+    const headers = { "Content-Type": "application/json" };
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
+    const response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      // Some answers have no body (for example logout).
+    }
+    return { ok: response.ok, status: response.status, data };
+  }
+
+  async function loadAccount() {
+    token = token || readStoredToken();
+    if (!token) {
+      account = null;
+      renderAccount();
+      return;
+    }
+    try {
+      const result = await api("/api/accounts/me");
+      if (result.ok) {
+        account = result.data;
+      } else if (result.status === 401) {
+        logOutLocally();
+      }
+    } catch {
+      // The server may be waking up; keep what we have.
+    }
+    renderAccount();
+  }
+
+  function logOutLocally() {
+    token = null;
+    account = null;
+    clearStoredToken();
+    renderAccount();
+  }
+
+  function renderAccount() {
+    $("rated-guest").classList.toggle("hidden", account !== null);
+    $("rated-user").classList.toggle("hidden", account === null);
+    if (account) {
+      $("account-name").textContent = account.username;
+      $("account-rating").textContent = account.rating;
+      $("account-stats").textContent =
+              `ניצחונות: ${account.wins} · הפסדים: ${account.losses} · תיקו: ${account.draws}`;
+    }
+    renderFindHint();
+  }
+
+  function renderFindHint() {
+    $("find-hint").textContent = selectedMode === "CARDS"
+            ? "משחק קלפים על לוח 7 על 7. את סוג המשחק בוחרים למעלה."
+            : "משחק רגיל. את סוג המשחק בוחרים למעלה.";
+  }
+
+  async function loadLeaderboard() {
+    let result;
+    try {
+      result = await api("/api/leaderboard");
+    } catch {
+      return;
+    }
+    if (!result.ok || !Array.isArray(result.data)) {
+      return;
+    }
+
+    const body = $("leaderboard").querySelector("tbody");
+    body.innerHTML = "";
+    result.data.forEach((player, index) => {
+      const row = document.createElement("tr");
+      if (account && player.username.toLowerCase() === account.username.toLowerCase()) {
+        row.classList.add("me");
+      }
+      [String(index + 1), player.username, String(player.rating), String(player.wins)].forEach((text, column) => {
+        const cell = document.createElement("td");
+        cell.textContent = text;            // textContent, never innerHTML: usernames come from players
+        cell.className = column === 1 ? "name" : "number";
+        row.appendChild(cell);
+      });
+      body.appendChild(row);
+    });
+    $("leaderboard").classList.toggle("hidden", result.data.length === 0);
+    $("leaderboard-empty").classList.toggle("hidden", result.data.length > 0);
+  }
+
+  function openAccount(mode) {
+    accountMode = mode;
+    const registering = mode === "register";
+    $("account-title").textContent = registering ? "הרשמה" : "כניסה";
+    $("account-submit").textContent = registering ? "הירשם" : "כניסה";
+    $("account-switch").textContent = registering ? "כבר יש לך חשבון? לכניסה" : "אין לך חשבון? להרשמה";
+    $("password").autocomplete = registering ? "new-password" : "current-password";
+    $("password").value = "";
+    show("account");
+    $("username").focus();
+  }
+
+  $("open-login").addEventListener("click", () => openAccount("login"));
+  $("open-register").addEventListener("click", () => openAccount("register"));
+  $("account-switch").addEventListener("click", (event) => {
+    event.preventDefault();
+    openAccount(accountMode === "login" ? "register" : "login");
+  });
+
+  $("account-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const registering = accountMode === "register";
+    const remember = $("remember-me").checked;
+    $("account-submit").disabled = true;
+    try {
+      const result = await api(`/api/accounts/${registering ? "register" : "login"}`, "POST", {
+        username: $("username").value.trim(),
+        password: $("password").value,
+        rememberMe: remember
+      });
+      if (!result.ok) {
+        toast(ERRORS[result.data && result.data.message] || "משהו השתבש, נסה שוב");
+        return;
+      }
+      token = result.data.token;
+      storeToken(token, remember);
+      account = result.data.account;
+      $("password").value = "";
+      renderAccount();
+      show("home");
+      loadLeaderboard();
+      toast(registering ? `ברוך הבא, ${account.username}! אפשר לחפש יריב` : `שלום, ${account.username}!`);
+    } catch {
+      toast("אין חיבור לשרת, נסה שוב בעוד רגע");
+    } finally {
+      $("account-submit").disabled = false;
+    }
+  });
+
+  $("logout").addEventListener("click", async () => {
+    try {
+      await api("/api/accounts/logout", "POST");
+    } catch {
+      // Logged out on this device anyway.
+    }
+    logOutLocally();
+    loadLeaderboard();
+    toast("יצאת מהחשבון");
+  });
+
+  $("find-opponent").addEventListener("click", () => {
+    if (!account || !token) {
+      openAccount("login");
+      return;
+    }
+    ratedGame = true;
+    $("searching-mode").textContent = selectedMode === "CARDS" ? "משחק קלפים, לוח 7 על 7" : "משחק רגיל";
+    show("searching");
+    send({ type: "FIND_OPPONENT", token, mode: selectedMode });
+  });
+
+  function showRatingChange(message) {
+    if (!message.rated) {
+      setRatingNote("משחק ידידותי: מול אותו יריב נספרים בדירוג עד 3 משחקים ביממה", "");
+      return;
+    }
+    const sign = message.change > 0 ? "+" : "";
+    setRatingNote(`${sign}${message.change} לדירוג · הדירוג שלך עכשיו ${message.rating}`,
+            message.change > 0 ? "up" : message.change < 0 ? "down" : "");
+    if (account) {
+      account.rating = message.rating;
+    }
+  }
+
+  function setRatingNote(text, direction) {
+    const note = $("rating-note");
+    note.textContent = text;
+    note.classList.toggle("up", direction === "up");
+    note.classList.toggle("down", direction === "down");
+  }
+
+  // The hint under "find opponent" follows the game chosen at the top.
+  document.querySelectorAll("#mode-choice button").forEach((button) =>
+          button.addEventListener("click", renderFindHint));
+
+  loadAccount().then(loadLeaderboard);
 </script>
 </body>
 </html>
