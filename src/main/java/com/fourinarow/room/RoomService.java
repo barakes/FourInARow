@@ -2,15 +2,18 @@ package com.fourinarow.room;
 
 import com.fourinarow.ai.Difficulty;
 import com.fourinarow.cards.BoardSize;
+import com.fourinarow.ws.ServerMessages.WaitingForOpponent;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
-// Keeps track of all open rooms, and which room each connected player is in.
+// Keeps track of all open rooms, which room each connected player is in,
+// and who is waiting for a random opponent.
 @Service
 public class RoomService {
 
@@ -22,6 +25,19 @@ public class RoomService {
     private final Random random = new SecureRandom();
     private final Map<String, GameRoom> roomsByCode = new ConcurrentHashMap<>();
     private final Map<String, GameRoom> roomsByConnection = new ConcurrentHashMap<>();
+
+    // A registered player waiting for a random opponent. At most one per game mode:
+    // as soon as a second player arrives, the two are matched.
+    private record Waiting(Connection connection, long accountId, String username) {
+    }
+
+    // Only used inside synchronized methods.
+    private final Map<GameMode, Waiting> waiting = new EnumMap<>(GameMode.class);
+    private final ResultRecorder resultRecorder;
+
+    public RoomService(ResultRecorder resultRecorder) {
+        this.resultRecorder = resultRecorder;
+    }
 
     public synchronized void createRoom(Connection connection, String nickname, GameMode mode, BoardSize boardSize) {
         leave(connection);
@@ -63,6 +79,40 @@ public class RoomService {
         register(room, connection);
     }
 
+    // Random opponent: wait in the queue, or start a rated game with the player who is already waiting.
+    // The card game always uses the large board, so there are only two queues and nobody waits too long.
+    public synchronized void findOpponent(Connection connection, long accountId, String username, GameMode mode) {
+        leave(connection);
+        GameMode gameMode = orDefault(mode);
+        Waiting other = waiting.get(gameMode);
+
+        if (other != null && other.accountId() == accountId) {
+            throw new RoomException("You are already looking for an opponent in another window");
+        }
+        if (other == null) {
+            waiting.put(gameMode, new Waiting(connection, accountId, username));
+            connection.send(new WaitingForOpponent(gameMode));
+            return;
+        }
+
+        // Matched! Whoever waited longer is player one (in the classic game, player one moves first).
+        waiting.remove(gameMode);
+        String code = newCode();
+        RatedGame rated = new RatedGame(gameMode, resultRecorder, other.accountId(), accountId);
+        GameRoom room = switch (gameMode) {
+            case CLASSIC -> Room.rated(code, other.username(), other.connection(), username, connection, rated);
+            case CARDS -> CardRoom.rated(code, other.username(), other.connection(), username, connection,
+                    BoardSize.LARGE, new SecureRandom(), rated);
+        };
+        roomsByCode.put(code, room);
+        roomsByConnection.put(other.connection().id(), room);
+        roomsByConnection.put(connection.id(), room);
+    }
+
+    public synchronized void cancelSearch(Connection connection) {
+        waiting.values().removeIf(entry -> entry.connection().id().equals(connection.id()));
+    }
+
     // Not synchronized on the service: the room has its own lock, so games in different rooms don't wait for each other.
     public void move(Connection connection, Integer column) {
         if (column == null) {
@@ -82,8 +132,10 @@ public class RoomService {
         roomOf(connection).requestRematch(connection);
     }
 
-    // Called when a player disconnects or starts another game. The whole room is closed.
+    // Called when a player disconnects or starts another game. The whole room is closed,
+    // and the player is taken out of the queue if they were waiting.
     public synchronized void leave(Connection connection) {
+        cancelSearch(connection);
         GameRoom room = roomsByConnection.remove(connection.id());
         if (room == null) {
             return;
@@ -96,6 +148,11 @@ public class RoomService {
 
     public int openRooms() {
         return roomsByCode.size();
+    }
+
+    // For tests: how many players are waiting for an opponent.
+    synchronized int waitingPlayers() {
+        return waiting.size();
     }
 
     private GameRoom roomOf(Connection connection) {

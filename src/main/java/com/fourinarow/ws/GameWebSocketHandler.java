@@ -1,5 +1,7 @@
 package com.fourinarow.ws;
 
+import com.fourinarow.account.Account;
+import com.fourinarow.account.AccountService;
 import com.fourinarow.game.InvalidMoveException;
 import com.fourinarow.room.Connection;
 import com.fourinarow.room.RoomException;
@@ -28,11 +30,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private static final int MAX_MESSAGE_LENGTH = 1_000;
 
     private final RoomService roomService;
+    private final AccountService accountService;
     private final JsonMapper jsonMapper;
     private final Map<String, Connection> connections = new ConcurrentHashMap<>();
 
-    public GameWebSocketHandler(RoomService roomService, JsonMapper jsonMapper) {
+    public GameWebSocketHandler(RoomService roomService, AccountService accountService, JsonMapper jsonMapper) {
         this.roomService = roomService;
+        this.accountService = accountService;
         this.jsonMapper = jsonMapper;
     }
 
@@ -93,6 +97,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             case CARD_MOVE -> roomService.cardMove(
                     connection, request.handIndex(), request.row(), request.column());
             case REMATCH -> roomService.rematch(connection);
+            case FIND_OPPONENT -> {
+                // Only registered players can play rated games. The token says who the player is.
+                Account account = accountService.findByToken(request.token())
+                        .orElseThrow(() -> new RoomException("Please log in again"));
+                roomService.findOpponent(connection, account.getId(), account.getUsername(), request.mode());
+            }
+            case CANCEL_SEARCH -> roomService.cancelSearch(connection);
         }
     }
 }

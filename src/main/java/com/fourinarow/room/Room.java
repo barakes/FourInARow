@@ -19,6 +19,7 @@ import java.util.Random;
 import java.util.Set;
 
 // One classic game between two players: two people, or a person and the computer.
+// In the random-opponent mode the room is also rated: the result changes both players' ratings.
 // All methods are synchronized, so moves from both players are handled one at a time.
 public class Room implements GameRoom {
 
@@ -30,16 +31,19 @@ public class Room implements GameRoom {
     private Game game = new Game();
     private final Map<Player, Seat> seats = new EnumMap<>(Player.class);
     private final ComputerPlayer computer;
+    // Only in the random-opponent mode; null otherwise.
+    private final RatedGame rated;
     private final Set<Player> rematchRequests = EnumSet.noneOf(Player.class);
 
-    private Room(String code, ComputerPlayer computer) {
+    private Room(String code, ComputerPlayer computer, RatedGame rated) {
         this.code = code;
         this.computer = computer;
+        this.rated = rated;
     }
 
     // A room for two people. The host gets a code to share and waits for a friend.
     public static Room forFriends(String code, String nickname, Connection host) {
-        Room room = new Room(code, null);
+        Room room = new Room(code, null, null);
         room.seats.put(Player.ONE, new Seat(nickname, host));
         host.send(new RoomCreated(code, Player.ONE));
         return room;
@@ -48,9 +52,19 @@ public class Room implements GameRoom {
     // A game against the computer. It starts right away; the person always moves first.
     public static Room againstComputer(String code, String nickname, Connection human,
                                        Difficulty difficulty, Random random) {
-        Room room = new Room(code, new ComputerPlayer(difficulty, random));
+        Room room = new Room(code, new ComputerPlayer(difficulty, random), null);
         room.seats.put(Player.ONE, new Seat(nickname, human));
         room.seats.put(Player.TWO, new Seat("Computer (" + difficulty.name().toLowerCase(Locale.ROOT) + ")", null));
+        room.sendGameStarted();
+        return room;
+    }
+
+    // A rated game between two registered players who were matched from the queue. It starts right away.
+    static Room rated(String code, String nicknameOne, Connection connectionOne,
+                      String nicknameTwo, Connection connectionTwo, RatedGame rated) {
+        Room room = new Room(code, null, rated);
+        room.seats.put(Player.ONE, new Seat(nicknameOne, connectionOne));
+        room.seats.put(Player.TWO, new Seat(nicknameTwo, connectionTwo));
         room.sendGameStarted();
         return room;
     }
@@ -77,6 +91,10 @@ public class Room implements GameRoom {
         if (computer != null && game.getStatus() == Game.Status.IN_PROGRESS) {
             int computerColumn = computer.chooseColumn(game);
             broadcast(moveMade(game.play(game.getCurrentPlayer(), computerColumn)));
+        }
+
+        if (rated != null && game.getStatus() != Game.Status.IN_PROGRESS) {
+            rated.finish(game.getWinner(), this::connectionOf);
         }
     }
 
@@ -114,12 +132,19 @@ public class Room implements GameRoom {
         Seat first = seats.get(Player.ONE);
         seats.put(Player.ONE, seats.get(Player.TWO));
         seats.put(Player.TWO, first);
+        if (rated != null) {
+            rated.swapPlayers();
+        }
         startNewGame();
     }
 
     // Called when a player disconnects: the other person, if any, is told.
+    // Leaving a rated game in the middle counts as a loss.
     @Override
     public synchronized void leave(Connection connection) {
+        if (rated != null && isFull() && game.getStatus() == Game.Status.IN_PROGRESS) {
+            rated.finish(playerOf(connection).opponent(), this::connectionOf);
+        }
         for (Seat seat : seats.values()) {
             if (seat.connection() != null && !seat.connection().id().equals(connection.id())) {
                 seat.connection().send(new OpponentLeft());
@@ -152,8 +177,15 @@ public class Room implements GameRoom {
         throw new RoomException("You are not a player in this room");
     }
 
+    private Connection connectionOf(Player player) {
+        return seats.get(player).connection();
+    }
+
     private void startNewGame() {
         rematchRequests.clear();
+        if (rated != null) {
+            rated.newGame();
+        }
         game = new Game();
         sendGameStarted();
     }

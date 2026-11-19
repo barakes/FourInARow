@@ -12,8 +12,10 @@ import com.fourinarow.ws.ServerMessages.CardTurnPlayed;
 import com.fourinarow.ws.ServerMessages.GameStarted;
 import com.fourinarow.ws.ServerMessages.MoveMade;
 import com.fourinarow.ws.ServerMessages.OpponentLeft;
+import com.fourinarow.ws.ServerMessages.RatingChanged;
 import com.fourinarow.ws.ServerMessages.RematchRequested;
 import com.fourinarow.ws.ServerMessages.RoomCreated;
+import com.fourinarow.ws.ServerMessages.WaitingForOpponent;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -48,7 +50,24 @@ class RoomServiceTest {
         }
     }
 
-    private final RoomService service = new RoomService();
+    // A result recorder that remembers what it was asked to record, instead of using a database.
+    // The winner gets 16 points and the loser loses 16; a draw changes nothing.
+    private static class FakeRecorder implements ResultRecorder {
+        record Call(long accountOne, long accountTwo, GameMode mode, Player winner) {
+        }
+
+        final List<Call> calls = new ArrayList<>();
+
+        @Override
+        public RatingUpdate record(long accountOne, long accountTwo, GameMode mode, Player winner) {
+            calls.add(new Call(accountOne, accountTwo, mode, winner));
+            int change = winner == null ? 0 : winner == Player.ONE ? 16 : -16;
+            return new RatingUpdate(true, change, -change, 1000 + change, 1000 - change);
+        }
+    }
+
+    private final FakeRecorder recorder = new FakeRecorder();
+    private final RoomService service = new RoomService(recorder);
     private final FakeConnection host = new FakeConnection("host");
     private final FakeConnection guest = new FakeConnection("guest");
 
@@ -229,14 +248,7 @@ class RoomServiceTest {
         service.createRoom(host, "Dana", GameMode.CLASSIC, null);
         service.joinRoom(guest, host.messagesOf(RoomCreated.class).getFirst().code(), "Tom");
 
-        // The host stacks four in column 0 while the guest plays column 1: the host wins.
-        service.move(host, 0);
-        service.move(guest, 1);
-        service.move(host, 0);
-        service.move(guest, 1);
-        service.move(host, 0);
-        service.move(guest, 1);
-        service.move(host, 0);
+        playerOneWins(host, guest);
         assertThat(host.messagesOf(MoveMade.class).getLast().status()).isEqualTo(Game.Status.WON);
 
         // The host asks: the guest is told once, even if the host clicks twice.
@@ -274,6 +286,135 @@ class RoomServiceTest {
 
         assertThat(host.messagesOf(GameStarted.class)).hasSize(2);
         assertThat(host.messagesOf(GameStarted.class).getLast().you()).isEqualTo(Player.ONE);
+    }
+
+    // ---------- Random opponent (rated games) ----------
+
+    @Test
+    void twoPlayersInTheSameQueueAreMatched() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+        assertThat(host.messagesOf(WaitingForOpponent.class)).hasSize(1);
+        assertThat(service.waitingPlayers()).isEqualTo(1);
+
+        service.findOpponent(guest, 2, "Tom", GameMode.CLASSIC);
+
+        assertThat(service.waitingPlayers()).isZero();
+        // Whoever waited longer is player one.
+        assertThat(host.messagesOf(GameStarted.class).getFirst().you()).isEqualTo(Player.ONE);
+        assertThat(guest.messagesOf(GameStarted.class).getFirst().you()).isEqualTo(Player.TWO);
+        assertThat(guest.messagesOf(GameStarted.class).getFirst().playerOneName()).isEqualTo("Dana");
+    }
+
+    @Test
+    void aPlayerIsNeverMatchedWithThemselves() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+
+        // The same account, in another browser window.
+        assertThatThrownBy(() -> service.findOpponent(new FakeConnection("second-window"), 1, "Dana", GameMode.CLASSIC))
+                .isInstanceOf(RoomException.class)
+                .hasMessageContaining("another window");
+        assertThat(service.waitingPlayers()).isEqualTo(1);
+    }
+
+    @Test
+    void theClassicAndCardQueuesAreSeparate() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+        service.findOpponent(guest, 2, "Tom", GameMode.CARDS);
+
+        assertThat(service.waitingPlayers()).isEqualTo(2);
+        assertThat(host.messagesOf(GameStarted.class)).isEmpty();
+
+        // A second card player arrives: the card game always uses the large board.
+        FakeConnection third = new FakeConnection("third");
+        service.findOpponent(third, 3, "Noa", GameMode.CARDS);
+        assertThat(third.messagesOf(CardGameStarted.class).getFirst().size()).isEqualTo(7);
+    }
+
+    @Test
+    void theResultOfARatedGameIsRecordedAndBothPlayersAreTold() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+        service.findOpponent(guest, 2, "Tom", GameMode.CLASSIC);
+
+        playerOneWins(host, guest);
+
+        assertThat(recorder.calls).containsExactly(new FakeRecorder.Call(1, 2, GameMode.CLASSIC, Player.ONE));
+        assertThat(host.messagesOf(RatingChanged.class).getLast().change()).isEqualTo(16);
+        assertThat(guest.messagesOf(RatingChanged.class).getLast().change()).isEqualTo(-16);
+        assertThat(guest.messagesOf(RatingChanged.class).getLast().rating()).isEqualTo(984);
+    }
+
+    @Test
+    void leavingARatedGameInTheMiddleCountsAsALoss() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+        service.findOpponent(guest, 2, "Tom", GameMode.CLASSIC);
+        service.move(host, 3);
+
+        service.leave(guest);
+
+        assertThat(recorder.calls).containsExactly(new FakeRecorder.Call(1, 2, GameMode.CLASSIC, Player.ONE));
+        assertThat(host.messagesOf(RatingChanged.class)).hasSize(1);
+        assertThat(host.messagesOf(OpponentLeft.class)).hasSize(1);
+
+        // The room is closed: the other player leaving later records nothing more.
+        service.leave(host);
+        assertThat(recorder.calls).hasSize(1);
+    }
+
+    @Test
+    void leavingAfterARatedGameIsOverRecordsNothingMore() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+        service.findOpponent(guest, 2, "Tom", GameMode.CLASSIC);
+        playerOneWins(host, guest);
+
+        service.leave(guest);
+
+        assertThat(recorder.calls).hasSize(1);
+    }
+
+    @Test
+    void aRatedRematchSwapsTheAccountsWithTheSeats() {
+        service.findOpponent(host, 1, "Dana", GameMode.CLASSIC);
+        service.findOpponent(guest, 2, "Tom", GameMode.CLASSIC);
+        playerOneWins(host, guest);
+
+        service.rematch(host);
+        service.rematch(guest);
+        // Now the guest (account 2) is player one, and wins.
+        playerOneWins(guest, host);
+
+        assertThat(recorder.calls.getLast()).isEqualTo(new FakeRecorder.Call(2, 1, GameMode.CLASSIC, Player.ONE));
+        assertThat(guest.messagesOf(RatingChanged.class).getLast().change()).isEqualTo(16);
+    }
+
+    @Test
+    void cancellingOrDisconnectingTakesThePlayerOutOfTheQueue() {
+        service.findOpponent(host, 1, "Dana", GameMode.CARDS);
+        service.cancelSearch(host);
+        assertThat(service.waitingPlayers()).isZero();
+
+        service.findOpponent(host, 1, "Dana", GameMode.CARDS);
+        service.leave(host);
+        assertThat(service.waitingPlayers()).isZero();
+    }
+
+    @Test
+    void gamesWithAFriendAreNotRated() {
+        service.createRoom(host, "Dana", GameMode.CLASSIC, null);
+        service.joinRoom(guest, host.messagesOf(RoomCreated.class).getFirst().code(), "Tom");
+
+        playerOneWins(host, guest);
+
+        assertThat(recorder.calls).isEmpty();
+        assertThat(host.messagesOf(RatingChanged.class)).isEmpty();
+    }
+
+    // Player one stacks four discs in column 0 while player two plays column 1: player one wins.
+    private void playerOneWins(FakeConnection playerOne, FakeConnection playerTwo) {
+        for (int turn = 0; turn < 3; turn++) {
+            service.move(playerOne, 0);
+            service.move(playerTwo, 1);
+        }
+        service.move(playerOne, 0);
     }
 
     // At the start the board is empty: a picture card fits its picture's cell, and a wild card fits any cell.

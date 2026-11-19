@@ -6,6 +6,7 @@ import com.fourinarow.cards.Picture;
 import com.fourinarow.game.Board;
 import com.fourinarow.game.Game;
 import com.fourinarow.game.Player;
+import com.fourinarow.room.GameMode;
 
 import java.util.List;
 
@@ -65,6 +66,23 @@ public final class ServerMessages {
             this("CARD_TURN_PLAYED", result.player(), result.card(), result.row(), result.column(), result.removed(),
                     result.status(), result.winner(), result.winningLine(), result.currentPlayer(),
                     result.skippedPlayers(), hand, cardsLeft);
+        }
+    }
+
+    // ---------- Random opponent (rated games) ----------
+
+    // Sent to a player who is waiting in the queue for an opponent.
+    public record WaitingForOpponent(String type, GameMode mode) {
+        public WaitingForOpponent(GameMode mode) {
+            this("WAITING_FOR_OPPONENT", mode);
+        }
+    }
+
+    // Sent to each player after a rated game ends. "change" is this player's gain (or loss, if negative).
+    // When "rated" is false the game was friendly (the daily limit for this pair was reached) and nothing changed.
+    public record RatingChanged(String type, boolean rated, int change, int rating) {
+        public RatingChanged(boolean rated, int change, int rating) {
+            this("RATING_CHANGED", rated, change, rating);
         }
     }
 

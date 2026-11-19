@@ -12,10 +12,13 @@ import com.fourinarow.room.GameMode;
 //   MOVE          -> column                    (classic game)
 //   CARD_MOVE     -> handIndex, row, column    (card game)
 //   REMATCH       -> nothing                   (both games, after a game is over)
+//   FIND_OPPONENT -> token, mode               (random opponent, registered players only)
+//   CANCEL_SEARCH -> nothing
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ClientMessage(Type type, String nickname, String code, Difficulty difficulty,
                             GameMode mode, BoardSize boardSize,
-                            Integer column, Integer row, Integer handIndex) {
+                            Integer column, Integer row, Integer handIndex,
+                            String token) {
 
     public enum Type {
         CREATE_ROOM,
@@ -23,6 +26,8 @@ public record ClientMessage(Type type, String nickname, String code, Difficulty 
         PLAY_COMPUTER,
         MOVE,
         CARD_MOVE,
-        REMATCH
+        REMATCH,
+        FIND_OPPONENT,
+        CANCEL_SEARCH
     }
 }

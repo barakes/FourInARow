@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.Set;
 
 // One card game between two players: two people, or a person and the computer.
+// In the random-opponent mode the room is also rated: the result changes both players' ratings.
 // Every message that contains a hand is built separately for each player, so nobody ever receives the opponent's cards.
 public class CardRoom implements GameRoom {
 
@@ -35,18 +36,21 @@ public class CardRoom implements GameRoom {
     private CardGame game;
     private final Map<Player, Seat> seats = new EnumMap<>(Player.class);
     private final CardComputerPlayer computer;
+    // Only in the random-opponent mode; null otherwise.
+    private final RatedGame rated;
     private final Set<Player> rematchRequests = EnumSet.noneOf(Player.class);
 
-    private CardRoom(String code, BoardSize boardSize, Random random, CardComputerPlayer computer) {
+    private CardRoom(String code, BoardSize boardSize, Random random, CardComputerPlayer computer, RatedGame rated) {
         this.code = code;
         this.boardSize = boardSize;
         this.random = random;
         this.game = new CardGame(boardSize, random);
         this.computer = computer;
+        this.rated = rated;
     }
 
     public static CardRoom forFriends(String code, String nickname, Connection host, BoardSize boardSize, Random random) {
-        CardRoom room = new CardRoom(code, boardSize, random, null);
+        CardRoom room = new CardRoom(code, boardSize, random, null, null);
         room.seats.put(Player.ONE, new Seat(nickname, host));
         host.send(new RoomCreated(code, Player.ONE));
         return room;
@@ -55,13 +59,24 @@ public class CardRoom implements GameRoom {
     // Starts right away. The first player is chosen at random, so the computer may move first.
     public static CardRoom againstComputer(String code, String nickname, Connection human,
                                            Difficulty difficulty, BoardSize boardSize, Random random) {
-        CardRoom room = new CardRoom(code, boardSize, random, new CardComputerPlayer(difficulty, random));
+        CardRoom room = new CardRoom(code, boardSize, random, new CardComputerPlayer(difficulty, random), null);
         room.seats.put(Player.ONE, new Seat(nickname, human));
         room.seats.put(Player.TWO, new Seat("Computer (" + difficulty.name().toLowerCase(Locale.ROOT) + ")", null));
         synchronized (room) {
             room.sendGameStarted();
             room.playComputerTurns();
         }
+        return room;
+    }
+
+    // A rated game between two registered players who were matched from the queue. It starts right away.
+    static CardRoom rated(String code, String nicknameOne, Connection connectionOne,
+                          String nicknameTwo, Connection connectionTwo,
+                          BoardSize boardSize, Random random, RatedGame rated) {
+        CardRoom room = new CardRoom(code, boardSize, random, null, rated);
+        room.seats.put(Player.ONE, new Seat(nicknameOne, connectionOne));
+        room.seats.put(Player.TWO, new Seat(nicknameTwo, connectionTwo));
+        room.sendGameStarted();
         return room;
     }
 
@@ -119,8 +134,13 @@ public class CardRoom implements GameRoom {
         startNewGame();
     }
 
+    // Called when a player disconnects: the other person, if any, is told.
+    // Leaving a rated game in the middle counts as a loss.
     @Override
     public synchronized void leave(Connection connection) {
+        if (rated != null && isFull() && game.getStatus() == CardGame.Status.IN_PROGRESS) {
+            rated.finish(playerOf(connection).opponent(), this::connectionOf);
+        }
         for (Seat seat : seats.values()) {
             if (seat.connection() != null && !seat.connection().id().equals(connection.id())) {
                 seat.connection().send(new OpponentLeft());
@@ -143,9 +163,16 @@ public class CardRoom implements GameRoom {
         return game;
     }
 
+    private Connection connectionOf(Player player) {
+        return seats.get(player).connection();
+    }
+
     // A fresh board, deck and hands, with the same board size.
     private void startNewGame() {
         rematchRequests.clear();
+        if (rated != null) {
+            rated.newGame();
+        }
         game = new CardGame(boardSize, random);
         sendGameStarted();
         playComputerTurns();
@@ -162,12 +189,17 @@ public class CardRoom implements GameRoom {
     }
 
     // Each person gets the same turn, but with their own hand only.
+    // If the turn ended a rated game, the result is recorded right after.
     private void sendTurn(CardGame.TurnResult result) {
         for (Map.Entry<Player, Seat> entry : seats.entrySet()) {
             Connection connection = entry.getValue().connection();
             if (connection != null) {
                 connection.send(new CardTurnPlayed(result, game.hand(entry.getKey()), game.cardsLeftInDeck()));
             }
+        }
+
+        if (rated != null && game.getStatus() != CardGame.Status.IN_PROGRESS) {
+            rated.finish(game.getWinner(), this::connectionOf);
         }
     }
 
